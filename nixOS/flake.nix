@@ -24,7 +24,7 @@
       # (that's just how nixosSystem's pkgs resolution works, regardless
       # of the flake input's own separate pin) — so the thing that
       # actually matters for that build to succeed is that OUR nixpkgs
-      # (below) is new enough. We were on nixos-25.11 (EOL, Cargo too old
+      # (below) is new enough. We were on nixos-24.11 (EOL, Cargo too old
       # for nixos-wsl-utils' edition2024 requirement); nixos-25.11 fixes
       # this at the root.
       mkHomeManagerModule = v: {
