@@ -13,7 +13,7 @@
     let
       system = "x86_64-linux"; # change to aarch64-linux if on ARM
     in {
-      nixosConfigurations.mediaserver = nixpkgs.lib.nixosSystem {
+      nixosConfigurations.scrapy = nixpkgs.lib.nixosSystem {
         inherit system;
         modules = [
           ./hardware-configuration.nix
@@ -22,7 +22,7 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.users.media = import ./home.nix;
+            home-manager.users.enexolgort = import ./home.nix;
           }
         ];
       };

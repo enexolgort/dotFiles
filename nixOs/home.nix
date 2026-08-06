@@ -1,8 +1,8 @@
 { config, pkgs, lib, ... }:
 
 {
-  home.username = "media";
-  home.homeDirectory = "/home/media";
+  home.username = "enexolgort";
+  home.homeDirectory = "/home/enexolgort";
   home.stateVersion = "24.11";
 
   # --- Emacs itself --------------------------------------------------
@@ -41,7 +41,7 @@
 
     if [ ! -d "$DOOM_CONF" ]; then
       $DRY_RUN_CMD "$DOOM_DIR/bin/doom" install --no-env --no-fonts -! \
-        || echo "doom install failed - run 'doom install' manually as the media user"
+        || echo "doom install failed - run 'doom install' manually as the enexolgort user"
     fi
   '';
 
@@ -52,6 +52,6 @@
   programs.git = {
     enable = true;
     userName = "Media Server";
-    userEmail = "media@mediaserver.local"; # <-- change to your real email
+    userEmail = "enexolgort@scrapy.local"; # <-- change to your real email
   };
 }
