@@ -20,21 +20,35 @@ fi
 echo "==> Enabling linger for $USERNAME (keeps user services, e.g. the Emacs daemon, running without an active login session)"
 sudo loginctl enable-linger "$USERNAME"
 
-# --- Doom Emacs: fallback in case home.nix's activation-script bootstrap
-# didn't complete (e.g. no network reachable at the time of the rebuild).
-# Safe to re-run — `doom sync` is idempotent, and `doom install` skips
-# steps that already ran.
+# --- Doom Emacs: bootstrap if needed, deploy your tracked config from
+# the repo's doom/ folder, then sync. Safe to re-run any time — copying
+# is a plain overwrite and `doom sync` is idempotent.
 DOOM_BIN="$HOME/.config/emacs/bin/doom"
 DOOM_CONF="$HOME/.config/doom"
+DOOM_SRC_DIR="$SCRIPT_DIR/doom"
 
 if [ -x "$DOOM_BIN" ]; then
   if [ ! -d "$DOOM_CONF" ]; then
-    echo "==> Doom not installed yet, running 'doom install'"
+    echo "==> Doom not bootstrapped yet, running 'doom install' first"
     "$DOOM_BIN" install --no-env --no-fonts -!
-  else
-    echo "==> Doom already installed, running 'doom sync' to catch up on any config changes"
-    "$DOOM_BIN" sync
   fi
+
+  if [ -d "$DOOM_SRC_DIR" ]; then
+    echo "==> Deploying tracked Doom config from $DOOM_SRC_DIR to $DOOM_CONF"
+    mkdir -p "$DOOM_CONF"
+    for f in init.el config.el packages.el; do
+      if [ -f "$DOOM_SRC_DIR/$f" ]; then
+        cp "$DOOM_SRC_DIR/$f" "$DOOM_CONF/$f"
+        echo "    copied $f"
+      fi
+    done
+  else
+    echo "!! No doom/ folder found at $DOOM_SRC_DIR — leaving \$DOOM_CONF as-is"
+    echo "   (run 'mkdir ~/dotFiles/doom && cp ~/.config/doom/*.el ~/dotFiles/doom/' to start tracking it)"
+  fi
+
+  echo "==> Running 'doom sync' to install/update packages and apply config"
+  "$DOOM_BIN" sync
 else
   echo "!! $DOOM_BIN not found — Emacs/Doom may not have been cloned yet."
   echo "   Run 'sudo nixos-rebuild switch' again first, or check ~/.config/emacs exists."
