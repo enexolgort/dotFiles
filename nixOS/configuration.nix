@@ -16,8 +16,10 @@
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
   nixpkgs.config.allowUnfree = true; # jellyfin's ffmpeg wants some unfree codecs
   nixpkgs.config.permittedInsecurePackages = [
-    "emacs-pgtk-with-packages-29.4"   # <-- placeholder, needs the exact string from your error
+    "emacs-pgtk-with-packages-29.4"
+    "emacs-pgtk-29.4"
   ];
+
   # --- User account ----------------------------------------------------
   # Set a real password after first boot with: passwd <username>
   users.users.${vars.username} = {
