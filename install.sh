@@ -1,26 +1,34 @@
 #!/usr/bin/env bash
 # install.sh
-# Run from inside the dotfiles repo's nixOS/ subfolder.
+# Lives at the root of the dotfiles repo; the actual nix files live in
+# ./nixOS/ next to it.
 #
-# 1. Symlinks flake.nix, configuration.nix, home.nix from this repo into
-#    /etc/nixos, so `nixos-rebuild` always uses the version in your repo.
-#    hardware-configuration.nix is left alone if a real one already
-#    exists at /etc/nixos (it's machine-specific, never something you
-#    want overwritten by the placeholder in git).
+# 1. Symlinks flake.nix, configuration.nix, home.nix, vars.nix from
+#    ./nixOS/ into /etc/nixos, so `nixos-rebuild` always uses the
+#    version in your repo. hardware-configuration.nix is left alone if
+#    a real one already exists at /etc/nixos (it's machine-specific,
+#    never something you want overwritten by the placeholder in git).
 # 2. Creates ~/projects and clones transmission-API + transmission-webUi
 #    into it (skips any repo that's already cloned).
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NIXOS_SRC_DIR="$SCRIPT_DIR/nixOS"
 NIXOS_DIR="/etc/nixos"
 
+if [ ! -d "$NIXOS_SRC_DIR" ]; then
+  echo "!! Expected nix files at $NIXOS_SRC_DIR but that folder doesn't exist."
+  echo "   Adjust NIXOS_SRC_DIR at the top of this script if your repo layout differs."
+  exit 1
+fi
+
 # --- 1. Link the NixOS config into /etc/nixos --------------------------
-echo "==> Linking NixOS config from $SCRIPT_DIR into $NIXOS_DIR"
+echo "==> Linking NixOS config from $NIXOS_SRC_DIR into $NIXOS_DIR"
 sudo mkdir -p "$NIXOS_DIR"
 
 for f in flake.nix configuration.nix home.nix vars.nix; do
-  src="$SCRIPT_DIR/$f"
+  src="$NIXOS_SRC_DIR/$f"
   dst="$NIXOS_DIR/$f"
 
   if [ ! -f "$src" ]; then
@@ -48,7 +56,7 @@ done
 if [ ! -e "$NIXOS_DIR/hardware-configuration.nix" ]; then
   echo "==> No hardware-configuration.nix at $NIXOS_DIR — copying placeholder from repo"
   echo "    Replace this with your real generated one before installing/rebuilding!"
-  sudo cp "$SCRIPT_DIR/hardware-configuration.nix" "$NIXOS_DIR/hardware-configuration.nix"
+  sudo cp "$NIXOS_SRC_DIR/hardware-configuration.nix" "$NIXOS_DIR/hardware-configuration.nix"
 else
   echo "==> Existing hardware-configuration.nix found at $NIXOS_DIR, leaving it untouched"
 fi
