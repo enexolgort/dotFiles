@@ -108,7 +108,9 @@
 
   programs.git = {
     enable = true;
-    userName = vars.username;
-    userEmail = vars.gitEmail; # <-- set your real email in vars.nix
+    settings.user = {
+      name = vars.username;
+      email = vars.gitEmail; # <-- set your real email in vars.nix
+    };
   };
 }
