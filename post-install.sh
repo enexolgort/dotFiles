@@ -20,6 +20,26 @@ fi
 echo "==> Enabling linger for $USERNAME (keeps user services, e.g. the Emacs daemon, running without an active login session)"
 sudo loginctl enable-linger "$USERNAME"
 
+# --- Doom Emacs: fallback in case home.nix's activation-script bootstrap
+# didn't complete (e.g. no network reachable at the time of the rebuild).
+# Safe to re-run — `doom sync` is idempotent, and `doom install` skips
+# steps that already ran.
+DOOM_BIN="$HOME/.config/emacs/bin/doom"
+DOOM_CONF="$HOME/.config/doom"
+
+if [ -x "$DOOM_BIN" ]; then
+  if [ ! -d "$DOOM_CONF" ]; then
+    echo "==> Doom not installed yet, running 'doom install'"
+    "$DOOM_BIN" install --no-env --no-fonts -!
+  else
+    echo "==> Doom already installed, running 'doom sync' to catch up on any config changes"
+    "$DOOM_BIN" sync
+  fi
+else
+  echo "!! $DOOM_BIN not found — Emacs/Doom may not have been cloned yet."
+  echo "   Run 'sudo nixos-rebuild switch' again first, or check ~/.config/emacs exists."
+fi
+
 echo "==> Done."
 echo
 echo "Still manual (not scriptable, need interactive input):"

@@ -24,6 +24,50 @@ if [ ! -d "$NIXOS_SRC_DIR" ]; then
   exit 1
 fi
 
+# --- 0. Warn if vars.nix still has default/placeholder passwords --------
+check_default_passwords() {
+  local vars_file="$1"
+  local found_defaults=()
+
+  if [ ! -f "$vars_file" ]; then
+    return 0
+  fi
+
+  grep -q 'initialPassword[[:space:]]*=[[:space:]]*"changeme"' "$vars_file" \
+    && found_defaults+=("initialPassword ('changeme')")
+
+  grep -q 'couchdbAdminPass[[:space:]]*=[[:space:]]*"changeme-couchdb"' "$vars_file" \
+    && found_defaults+=("couchdbAdminPass ('changeme-couchdb')")
+
+  if [ ${#found_defaults[@]} -eq 0 ]; then
+    return 0
+  fi
+
+  echo "!! WARNING: vars.nix still has default placeholder password(s):"
+  for d in "${found_defaults[@]}"; do
+    echo "     - $d"
+  done
+  echo "   These are plaintext, publicly-known defaults from the template."
+
+  if [ ! -t 0 ]; then
+    # Not an interactive terminal (e.g. piped/non-interactive run) — can't
+    # prompt, so just warn loudly and continue rather than hang or abort.
+    echo "   (non-interactive shell, continuing anyway — fix this before relying on the server)"
+    return 0
+  fi
+
+  read -rp "   Continue anyway with these default passwords? [y/N] " reply
+  case "$reply" in
+    [yY]|[yY][eE][sS]) ;;
+    *)
+      echo "Aborted. Edit $vars_file to set real passwords, then re-run this script."
+      exit 1
+      ;;
+  esac
+}
+
+check_default_passwords "$NIXOS_SRC_DIR/vars.nix"
+
 # --- 1. Copy the NixOS config into /etc/nixos ---------------------------
 echo "==> Copying NixOS config from $NIXOS_SRC_DIR into $NIXOS_DIR"
 sudo mkdir -p "$NIXOS_DIR"

@@ -61,4 +61,18 @@ copy --source /src/dir --destination /dst/dir
 rename --source /old/name --destination /new/name
 ```
 
+## Checking everything's actually reachable
+`check-remote.sh` (repo root) is a client-side health check — run it from **any device on your tailnet**, not the server itself, to verify SSH, SFTP, Jellyfin, and CouchDB are all actually reachable in one shot instead of manually `curl`/`ping`-ing each one:
+
+```bash
+./check-remote.sh --host scrapy-wsl
+```
+
+Options:
+- `--host <name-or-ip>` — target server (defaults to `scrapy`, or `scrapy-wsl` if `tailscale status` shows it)
+- `--sftp-user <name> --sftp-key <path>` — do an actual SFTP login test, not just a port check
+- `--samba` — also check Samba's port 445 (real-machine target only; skip entirely on WSL)
+
+Exits `0` if everything passed, `1` if anything failed — usable in scripts/cron if you want periodic monitoring, not just manual checks.
+
 [← back to overview](./overview.md)
