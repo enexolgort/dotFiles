@@ -61,15 +61,81 @@
   # Put doom's bin on PATH
   home.sessionPath = [ "$HOME/.config/emacs/bin" ];
 
+  # --- Neofetch: shown automatically on every interactive login -------
+  programs.neofetch = {
+    enable = true;
+    settings = {
+      print_info = ''
+        info title
+        info underline
+        info "OS" distro
+        info "Host" model
+        info "Kernel" kernel
+        info "Uptime" uptime
+        info "Packages" packages
+        info "Shell" shell
+        info "Terminal" term
+        info "CPU" cpu
+        info "GPU" gpu
+        info "Memory" memory
+        info "Disk" disk
+        info "Local IP" local_ip
+        info "Locale" locale
+        info cols
+      '';
+
+      # NixOS snowflake logo, colored to match the distro automatically
+      ascii_distro = "auto";
+      ascii_colors = "distro";
+      ascii_bold = "on";
+
+      bold = "on";
+      underline_enabled = "on";
+      underline_char = "-";
+      separator = " ->";
+
+      # colored blocks under the info, distro-themed
+      color_blocks = "on";
+      block_range = "0 15";
+      block_width = "3";
+      block_height = "1";
+      col_offset = "auto";
+
+      memory_percent = "on";
+      memory_unit = "gib";
+
+      disk_show = [ "/" ];
+      disk_subtitle = "mount";
+      disk_percent = "on";
+
+      speed_type = "bios_limit";
+      cpu_brand = "on";
+      cpu_speed = "on";
+      cpu_cores = "logical";
+      cpu_temp = "off"; # often unavailable/inaccurate inside VMs and WSL
+
+      gpu_brand = "on";
+      gpu_type = "all";
+
+      image_backend = "ascii"; # no terminal image protocol assumed over SSH
+    };
+  };
+
   programs.bash = {
     enable = true;
 
-    # --- Named-flag move/copy/rename, e.g.:
-    #   move --source /src/file --destination /dst/file
-    #   copy --source /src/dir  --destination /dst/dir
-    #   rename --source /old/name --destination /new/name
-    # Functions, not aliases — aliases can't parse --flags.
     initExtra = ''
+      # Neofetch on every interactive login (skipped for non-interactive
+      # shells like scp/rsync/git-over-ssh, so it doesn't spam those).
+      if [[ $- == *i* ]]; then
+        neofetch
+      fi
+
+      # --- Named-flag move/copy/rename, e.g.:
+      #   move --source /src/file --destination /dst/file
+      #   copy --source /src/dir  --destination /dst/dir
+      #   rename --source /old/name --destination /new/name
+      # Functions, not aliases — aliases can't parse --flags.
       _parse_source_dest() {
         # sets $__src and $__dst from --source/--destination, or prints
         # usage and returns 1 if either is missing.
