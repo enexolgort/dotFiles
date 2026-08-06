@@ -1,7 +1,7 @@
 # Boot behavior & applying future changes
 
 ## Boot behavior
-Every service in this config (Tailscale, Jellyfin, CouchDB, SSH, Samba, Docker) is set to **start automatically on every boot** — that's inherent to `services.X.enable = true;` in NixOS, not something extra you need to configure. Unlike Ubuntu/Debian, there's no separate "enable at startup" step.
+Every service in this config (Tailscale, Jellyfin, CouchDB, SSH, Docker, and Samba on the real machine) is set to **start automatically on every boot** — that's inherent to `services.X.enable = true;` in NixOS, not something extra you need to configure. Unlike Ubuntu/Debian, there's no separate "enable at startup" step.
 
 The network-dependent ones (Tailscale, Jellyfin, CouchDB, Docker) are also explicitly told to wait for real connectivity (`network-online.target`) before starting, so a slow DHCP lease on first boot or after a power cut doesn't cause them to fail or bind incorrectly.
 

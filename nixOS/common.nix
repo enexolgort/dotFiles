@@ -167,34 +167,10 @@
       PasswordAuthentication no
   '';
 
-  # --- Optional: Samba share for LAN devices (unrelated to Tailscale) --
-  # NOTE: under WSL, this is only reachable from other LAN devices if
-  # you're on WSL2 "mirrored" networking mode (Windows 11) — WSL2's
-  # default NAT networking hides it from anything outside the Windows
-  # host itself. Jellyfin/Tailscale/SSH are unaffected either way since
-  # they only need to be reachable via tailscale0.
-  services.samba = {
-    enable = true;
-    openFirewall = true;
-    settings = {
-      global = {
-        workgroup = vars.sambaWorkgroup;
-        "server string" = vars.hostname;
-        security = "user";
-      };
-      media = {
-        path = vars.mediaDir;
-        browseable = "yes";
-        "read only" = "no";
-        "guest ok" = "no";
-        "valid users" = vars.username;
-        "force group" = vars.username;
-        "create mask" = "0664";
-        "directory mask" = "0775";
-      };
-    };
-  };
-  # Set the samba password once, after first boot: sudo smbpasswd -a <username>
+  # NOTE: Samba lives in configuration.nix (real-machine only), not here —
+  # nmbd depends on UDP broadcast networking that WSL2's virtualized NAT
+  # adapter doesn't support, which makes it crash outright on the WSL
+  # target rather than just being unreachable.
 
   # --- System packages (system-wide, not user-specific) -------------
   environment.systemPackages = with pkgs; [
