@@ -15,6 +15,12 @@
   # --- Nix settings ----------------------------------------------------
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
   nixpkgs.config.allowUnfree = true; # jellyfin's ffmpeg wants some unfree codecs
+  # These are pinned to exact version strings from nixos-24.11's emacs
+  # build — after bumping to nixos-25.11, the default Emacs is likely a
+  # newer version (e.g. 30.x), so these specific strings may no longer
+  # match anything (harmless if so) OR a *new* insecure-package error
+  # may appear with a different version string that needs adding here
+  # instead. Check on first rebuild after the nixpkgs bump.
   nixpkgs.config.permittedInsecurePackages = [
     "emacs-pgtk-with-packages-29.4"
     "emacs-pgtk-29.4"

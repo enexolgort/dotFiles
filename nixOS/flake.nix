@@ -2,9 +2,9 @@
   description = "NixOS multimedia server (Jellyfin) with Doom Emacs — real machine + WSL";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     home-manager = {
-      url = "github:nix-community/home-manager/release-24.11";
+      url = "github:nix-community/home-manager/release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixos-wsl.url = "github:nix-community/NixOS-WSL";
@@ -19,12 +19,14 @@
       # your tailnet if you ever run both at once.
       wslVars = vars // { hostname = "${vars.hostname}-wsl"; };
 
-      # NOTE: nixos-wsl deliberately does NOT follow our nixpkgs (see
-      # inputs above) — its own Rust-based utility needs a newer Cargo
-      # than the nixos-24.11 branch ships, so it needs its own pin.
-      # useGlobalPkgs below still refers to *our* nixpkgs (24.11) for the
-      # actual system/home-manager packages — only nixos-wsl's internal
-      # build tooling uses its separate pin.
+      # NOTE: nixos-wsl's own nixpkgs input isn't following ours, but its
+      # NixOS module still builds nixos-wsl-utils against *our* nixpkgs
+      # (that's just how nixosSystem's pkgs resolution works, regardless
+      # of the flake input's own separate pin) — so the thing that
+      # actually matters for that build to succeed is that OUR nixpkgs
+      # (below) is new enough. We were on nixos-24.11 (EOL, Cargo too old
+      # for nixos-wsl-utils' edition2024 requirement); nixos-25.11 fixes
+      # this at the root.
       mkHomeManagerModule = v: {
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
