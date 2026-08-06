@@ -11,10 +11,11 @@
 
   outputs = { self, nixpkgs, home-manager, ... }:
     let
-      system = "x86_64-linux"; # change to aarch64-linux if on ARM
+      vars = import ./vars.nix;
     in {
-      nixosConfigurations.scrapy = nixpkgs.lib.nixosSystem {
-        inherit system;
+      nixosConfigurations.${vars.hostname} = nixpkgs.lib.nixosSystem {
+        system = vars.system;
+        specialArgs = { inherit vars; };
         modules = [
           ./hardware-configuration.nix
           ./configuration.nix
@@ -22,7 +23,8 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.users.enexolgort = import ./home.nix;
+            home-manager.extraSpecialArgs = { inherit vars; };
+            home-manager.users.${vars.username} = import ./home.nix;
           }
         ];
       };

@@ -1,8 +1,8 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, vars, ... }:
 
 {
-  home.username = "enexolgort";
-  home.homeDirectory = "/home/enexolgort";
+  home.username = vars.username;
+  home.homeDirectory = "/home/${vars.username}";
   home.stateVersion = "24.11";
 
   # --- Emacs itself --------------------------------------------------
@@ -41,7 +41,7 @@
 
     if [ ! -d "$DOOM_CONF" ]; then
       $DRY_RUN_CMD "$DOOM_DIR/bin/doom" install --no-env --no-fonts -! \
-        || echo "doom install failed - run 'doom install' manually as the enexolgort user"
+        || echo "doom install failed - run 'doom install' manually as the ${vars.username} user"
     fi
   '';
 
@@ -51,7 +51,7 @@
   programs.bash.enable = true;
   programs.git = {
     enable = true;
-    userName = "Media Server";
-    userEmail = "enexolgort@scrapy.local"; # <-- change to your real email
+    userName = vars.username;
+    userEmail = vars.gitEmail; # <-- set your real email in vars.nix
   };
 }

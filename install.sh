@@ -19,7 +19,7 @@ NIXOS_DIR="/etc/nixos"
 echo "==> Linking NixOS config from $SCRIPT_DIR into $NIXOS_DIR"
 sudo mkdir -p "$NIXOS_DIR"
 
-for f in flake.nix configuration.nix home.nix; do
+for f in flake.nix configuration.nix home.nix vars.nix; do
   src="$SCRIPT_DIR/$f"
   dst="$NIXOS_DIR/$f"
 
