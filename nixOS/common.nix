@@ -114,11 +114,14 @@
   # ======================================================================
   services.couchdb = {
     enable = true;
-    bindAddress = "0.0.0.0"; # firewall (trustedInterfaces) restricts real exposure
+    bindAddress = "0.0.0.0"; # legacy [httpd] section — CouchDB 3.x doesn't actually serve from here
     adminUser = vars.couchdbAdminUser;
     adminPass = vars.couchdbAdminPass; # CHANGE in vars.nix — see README about secrets
     extraConfig = {
-      chttpd.enable_cors = "true";
+      chttpd = {
+        enable_cors = "true";
+        bind_address = "0.0.0.0"; # the section CouchDB 3.x's real listener actually reads
+      };
       cors = {
         origins = "app://obsidian.md, capacitor://localhost, http://localhost";
         credentials = "true";
