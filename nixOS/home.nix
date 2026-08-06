@@ -12,7 +12,7 @@
   # far less likely to break on Doom updates than a nixified version.
   programs.emacs = {
     enable = true;
-    package = pkgs.emacs29-pgtk;
+    package = pkgs.emacs-pgtk;
   };
 
   # --- Run Emacs as a background daemon ------------------------------
