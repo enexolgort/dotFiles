@@ -6,7 +6,7 @@
 - **configuration.nix** — system config: Tailscale, Jellyfin, CouchDB (for Obsidian sync), Docker, chrooted SFTP, Samba, firewall, the main user
 - **home.nix** — user-level config: Emacs (native-comp, pgtk) + auto-bootstraps Doom Emacs on first activation
 - **hardware-configuration.nix** — **placeholder, you must replace this** (see below) — the one file that's genuinely machine-specific and can't live in `vars.nix`
-- **install.sh** — symlinks the above into `/etc/nixos` and clones your project repos into `~/projects`
+- **install.sh** — lives at the root of your dotfiles repo (not inside `nixOS/`); copies the four files above from `nixOS/` into `/etc/nixos`, and clones your project repos into `~/projects`. Run it as `./install.sh` from the repo root. These are plain copies, not symlinks — re-run the script any time you edit a file under `nixOS/` in the repo, so the copy in `/etc/nixos` picks up the change.
 
 ## Configuration — vars.nix
 This is the single place to edit:

@@ -3,11 +3,12 @@
 # Lives at the root of the dotfiles repo; the actual nix files live in
 # ./nixOS/ next to it.
 #
-# 1. Symlinks flake.nix, configuration.nix, home.nix, vars.nix from
-#    ./nixOS/ into /etc/nixos, so `nixos-rebuild` always uses the
-#    version in your repo. hardware-configuration.nix is left alone if
-#    a real one already exists at /etc/nixos (it's machine-specific,
+# 1. Copies flake.nix, configuration.nix, home.nix, vars.nix from
+#    ./nixOS/ into /etc/nixos. hardware-configuration.nix is left alone
+#    if a real one already exists at /etc/nixos (it's machine-specific,
 #    never something you want overwritten by the placeholder in git).
+#    NOTE: these are plain copies, not symlinks — editing files in the
+#    repo won't take effect until you re-run this script.
 # 2. Creates ~/projects and clones transmission-API + transmission-webUi
 #    into it (skips any repo that's already cloned).
 
@@ -23,8 +24,8 @@ if [ ! -d "$NIXOS_SRC_DIR" ]; then
   exit 1
 fi
 
-# --- 1. Link the NixOS config into /etc/nixos --------------------------
-echo "==> Linking NixOS config from $NIXOS_SRC_DIR into $NIXOS_DIR"
+# --- 1. Copy the NixOS config into /etc/nixos ---------------------------
+echo "==> Copying NixOS config from $NIXOS_SRC_DIR into $NIXOS_DIR"
 sudo mkdir -p "$NIXOS_DIR"
 
 for f in flake.nix configuration.nix home.nix vars.nix; do
@@ -36,18 +37,18 @@ for f in flake.nix configuration.nix home.nix vars.nix; do
     continue
   fi
 
-  if [ -L "$dst" ] && [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
-    echo "==> $f already linked, skipping"
+  if [ -f "$dst" ] && cmp -s "$src" "$dst"; then
+    echo "==> $f already up to date, skipping"
     continue
   fi
 
-  if [ -e "$dst" ] && [ ! -L "$dst" ]; then
+  if [ -e "$dst" ]; then
     echo "==> Backing up existing $dst -> $dst.bak"
-    sudo mv "$dst" "$dst.bak"
+    sudo cp "$dst" "$dst.bak"
   fi
 
-  sudo ln -sf "$src" "$dst"
-  echo "==> Linked $f"
+  sudo cp "$src" "$dst"
+  echo "==> Copied $f"
 done
 
 # hardware-configuration.nix: only put ours in place if there ISN'T
