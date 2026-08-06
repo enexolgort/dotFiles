@@ -133,7 +133,10 @@
   # ======================================================================
   # DOCKER
   # ======================================================================
-  virtualisation.docker.enable = true;
+  virtualisation.docker = {
+    enable = true;
+    package = pkgs.docker_29; # default (docker_28) is unmaintained/insecure as of nixos-25.11
+  };
 
   # ======================================================================
   # SFTP — dedicated, chrooted, tailnet-only upload user (separate from
