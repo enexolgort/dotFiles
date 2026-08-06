@@ -37,7 +37,7 @@
     imagemagick
     sqlite            # org-roam
     fontconfig
-    (nerdfonts.override { fonts = [ "JetBrainsMono" ]; }) # patched font for doom's modeline icons
+    nerd-fonts.jetbrains-mono # patched font for doom's modeline icons
     gnutls             # emacs package.el / straight.el needs this for https
     unzip
   ];
