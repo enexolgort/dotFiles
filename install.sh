@@ -28,7 +28,7 @@ fi
 echo "==> Copying NixOS config from $NIXOS_SRC_DIR into $NIXOS_DIR"
 sudo mkdir -p "$NIXOS_DIR"
 
-for f in flake.nix configuration.nix home.nix vars.nix; do
+for f in flake.nix configuration.nix common.nix wsl-configuration.nix home.nix vars.nix; do
   src="$NIXOS_SRC_DIR/$f"
   dst="$NIXOS_DIR/$f"
 
@@ -85,4 +85,6 @@ for repo_url in "${REPOS[@]}"; do
   git clone "$repo_url" "$target"
 done
 
-echo "==> Done. Run 'sudo nixos-rebuild switch --flake $NIXOS_DIR#scrapy' to apply."
+echo "==> Done."
+echo "    Real machine: sudo nixos-rebuild switch --flake $NIXOS_DIR#scrapy"
+echo "    NixOS-WSL:    sudo nixos-rebuild switch --flake $NIXOS_DIR#scrapy-wsl"

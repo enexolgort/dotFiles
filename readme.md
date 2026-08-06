@@ -1,13 +1,53 @@
 # NixOS Multimedia Server (Jellyfin + Doom Emacs + Tailscale + Docker + SFTP)
 
+## Two targets: real machine + WSL
+This flake builds **two separate systems** from the same shared config:
+- **`scrapy`** — a real machine or VM (VirtualBox, bare metal, etc.) with an actual disk and bootloader.
+- **`scrapy-wsl`** — the same services running inside **NixOS-WSL**, a real NixOS system that runs as its own WSL2 distro on Windows.
+
+They share everything that matters (`common.nix`: Tailscale, Jellyfin, CouchDB, Docker, SFTP, Samba, the user account) and differ only in the hardware/boot-specific bits, which live in `configuration.nix` (real machine) or `wsl-configuration.nix` (WSL) respectively.
+
+**Important distinction, since this tripped things up before**: NixOS-WSL is *not* the same as "installing Nix on top of Ubuntu-WSL" — the latter gives you the `nix`/`nix-shell` commands but no actual NixOS system underneath, so `nixos-rebuild` has nothing to manage (no `fileSystems."/"`, no systemd services it controls, nothing). NixOS-WSL replaces the whole WSL distro with real NixOS. See "Setting up NixOS-WSL" below if you haven't done this yet.
+
 ## What's in here
-- **vars.nix** — every value you're likely to want to change (hostname, username, timezone, paths, passwords, keys...) lives here. Everything else reads from it — you shouldn't need to touch the other files for routine changes.
-- **flake.nix** — entrypoint, pulls in nixpkgs 24.11 + home-manager, threads `vars` into every module
-- **configuration.nix** — system config: Tailscale, Jellyfin, CouchDB (for Obsidian sync), Docker, chrooted SFTP, Samba, firewall, the main user
-- **home.nix** — user-level config: Emacs (native-comp, pgtk) + auto-bootstraps Doom Emacs on first activation
-- **hardware-configuration.nix** — **placeholder, you must replace this** (see below) — the one file that's genuinely machine-specific and can't live in `vars.nix`
-- **install.sh** — lives at the root of your dotfiles repo (not inside `nixOS/`); copies the four files above from `nixOS/` into `/etc/nixos`, and clones your project repos into `~/projects`. Run it as `./install.sh` from the repo root. These are plain copies, not symlinks — re-run the script any time you edit a file under `nixOS/` in the repo, so the copy in `/etc/nixos` picks up the change.
-- **post-install.sh** — also at the repo root; run once after `nixos-rebuild switch` succeeds. Currently just enables `loginctl linger` for your user (reads the username straight out of `vars.nix`) so the Emacs daemon and other user services keep running without an active login session. Safe to re-run any time.
+- **vars.nix** — every value you're likely to want to change (hostname, username, timezone, paths, passwords, keys...) lives here. Everything else reads from it.
+- **flake.nix** — entrypoint. Defines both `nixosConfigurations.scrapy` and `nixosConfigurations.scrapy-wsl`, threading `vars` into every module. WSL gets a distinct hostname (`<hostname>-wsl`) automatically, so the two can coexist on your tailnet without colliding.
+- **common.nix** — everything shared between both targets: Tailscale, Jellyfin, CouchDB, Docker, SFTP, Samba, firewall, the main user.
+- **configuration.nix** — real-machine-only: bootloader, NetworkManager. Imports `common.nix`.
+- **wsl-configuration.nix** — WSL-only: the `nixos-wsl` module (`wsl.enable`, `wsl.defaultUser`). Imports `common.nix`. No bootloader/disk config — WSL2 owns that layer itself.
+- **home.nix** — user-level config: Emacs (native-comp, pgtk, daemonized) + auto-bootstraps Doom Emacs on first activation. Shared by both targets.
+- **hardware-configuration.nix** — **placeholder, you must replace this** — real-machine only, not used by the WSL target at all.
+- **install.sh** — lives at the root of your dotfiles repo (not inside `nixOS/`); copies the files above from `nixOS/` into `/etc/nixos` (on whichever system you run it on), and clones your project repos into `~/projects`. Run it as `./install.sh` from the repo root.
+- **post-install.sh** — also at the repo root; run once after `nixos-rebuild switch` succeeds, on either target. Enables `loginctl linger` for your user.
+
+## Setting up NixOS-WSL (one-time, on Windows)
+Skip this if you're only deploying to the real machine.
+
+1. In an elevated PowerShell:
+   ```powershell
+   wsl --install --no-distribution
+   ```
+   (skip if you already have WSL2 itself set up — this just ensures the WSL2 platform exists, without installing any particular distro yet)
+
+2. Download the latest NixOS-WSL release tarball from https://github.com/nix-community/NixOS-WSL/releases (the `nixos-wsl.tar.gz` asset).
+
+3. Import it as a new WSL distro:
+   ```powershell
+   wsl --import NixOS $env:USERPROFILE\NixOS-WSL\ path\to\nixos-wsl.tar.gz --version 2
+   wsl -d NixOS
+   ```
+   You're now inside a real, minimal NixOS system running under WSL2.
+
+4. From inside that NixOS-WSL shell, get git and clone your dotfiles repo:
+   ```bash
+   nix-shell -p git
+   git clone <your-dotfiles-repo-url> ~/dotFiles
+   cd ~/dotFiles
+   ./install.sh
+   sudo nixos-rebuild switch --flake /etc/nixos#scrapy-wsl
+   ```
+
+Your **existing** WSL distro (the Ubuntu-or-whatever one you were using before, with the plain `nix` package manager) is unaffected and still fine to keep around for general editing/git work — `NixOS` shows up as a separate distro alongside it in `wsl -l -v`.
 
 ## Configuration — vars.nix
 This is the single place to edit:
@@ -44,7 +84,8 @@ Change the hostname, rename the user, swap the SSH key, whatever — edit `vars.
 - **SFTP**: a separate, unprivileged `sftpuser` account, chrooted to `sftpDir`, which is bind-mounted to `mediaDir/upload` — so it can only ever write into your media folder, nothing else on the system. Key-based auth only (no password).
 - **Tailscale SSH**: enabled via a one-time `tailscale up --ssh` command (see below) — gives you keyless, identity-based SSH login to your main account from any device in your tailnet, no SSH keys required.
 
-## Deploy steps
+## Deploy steps (real machine / VM target)
+For the WSL target, see "Setting up NixOS-WSL" above instead — there's no partitioning/`nixos-install` step, since WSL2 already provides the disk and NixOS-WSL comes pre-installed from the tarball.
 
 1. **Boot the NixOS installer**, partition/mount disks, then:
    ```bash
@@ -145,16 +186,18 @@ Your `~/.config/doom/*.el` files are untouched by Nix either way.
 
 ## Applying future changes
 ```bash
-sudo nixos-rebuild switch --flake /etc/nixos#<hostname-from-vars.nix>
+sudo nixos-rebuild switch --flake /etc/nixos#scrapy       # real machine
+sudo nixos-rebuild switch --flake /etc/nixos#scrapy-wsl   # WSL
 ```
-Once installed, the system's own hostname matches `vars.hostname`, so you can usually drop the `#<hostname>` entirely:
+On the real machine, the system's own hostname matches `vars.hostname`, so you can usually drop the `#scrapy` there specifically:
 ```bash
 sudo nixos-rebuild switch --flake /etc/nixos
 ```
+(WSL's hostname is `<vars.hostname>-wsl`, so you'll generally want to keep the explicit `#scrapy-wsl` there.)
 
 ## Common follow-ups
 - **Real HTTPS via Tailscale** for Jellyfin/CouchDB (`tailscale serve`)
 - **Encrypted secrets** (sops-nix/agenix) instead of plaintext passwords in `vars.nix`
 - **Exit node / subnet router** if you want the server to route LAN traffic into your tailnet
 - **GPU transcoding** later — say which GPU and I'll add it
-- **Per-machine vars.nix** if you ever run this config on more than one box (e.g. `vars-scrapy.nix`, `vars-laptop.nix`, selected in `flake.nix`)
+- **WSL2 mirrored networking** (Windows 11) if you want the Samba share reachable from other LAN devices while on the WSL target
