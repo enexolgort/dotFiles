@@ -40,6 +40,7 @@
     nerd-fonts.jetbrains-mono # patched font for doom's modeline icons
     gnutls             # emacs package.el / straight.el needs this for https
     unzip
+    neofetch
   ];
 
   # --- Auto-bootstrap Doom Emacs on first home-manager activation ----
@@ -62,10 +63,11 @@
   home.sessionPath = [ "$HOME/.config/emacs/bin" ];
 
   # --- Neofetch: shown automatically on every interactive login -------
-  programs.neofetch = {
-    enable = true;
-    settings = {
-      print_info = ''
+  # home-manager has no dedicated neofetch module, so this is a plain
+  # package (above) + hand-written config.conf, in neofetch's own
+  # bash-sourced config syntax rather than a Nix attrset.
+  xdg.configFile."neofetch/config.conf".text = ''
+    print_info() {
         info title
         info underline
         info "OS" distro
@@ -82,44 +84,43 @@
         info "Local IP" local_ip
         info "Locale" locale
         info cols
-      '';
+    }
 
-      # NixOS snowflake logo, colored to match the distro automatically
-      ascii_distro = "auto";
-      ascii_colors = "distro";
-      ascii_bold = "on";
+    # NixOS snowflake logo, colored to match the distro automatically
+    ascii_distro="auto"
+    ascii_colors=(distro)
+    ascii_bold="on"
 
-      bold = "on";
-      underline_enabled = "on";
-      underline_char = "-";
-      separator = " ->";
+    bold="on"
+    underline_enabled="on"
+    underline_char="-"
+    separator=" ->"
 
-      # colored blocks under the info, distro-themed
-      color_blocks = "on";
-      block_range = "0 15";
-      block_width = "3";
-      block_height = "1";
-      col_offset = "auto";
+    # colored blocks under the info, distro-themed
+    color_blocks="on"
+    block_range=(0 15)
+    block_width=3
+    block_height=1
+    col_offset="auto"
 
-      memory_percent = "on";
-      memory_unit = "gib";
+    memory_percent="on"
+    memory_unit="gib"
 
-      disk_show = [ "/" ];
-      disk_subtitle = "mount";
-      disk_percent = "on";
+    disk_show=("/")
+    disk_subtitle="mount"
+    disk_percent="on"
 
-      speed_type = "bios_limit";
-      cpu_brand = "on";
-      cpu_speed = "on";
-      cpu_cores = "logical";
-      cpu_temp = "off"; # often unavailable/inaccurate inside VMs and WSL
+    speed_type="bios_limit"
+    cpu_brand="on"
+    cpu_speed="on"
+    cpu_cores="logical"
+    cpu_temp="off"
 
-      gpu_brand = "on";
-      gpu_type = "all";
+    gpu_brand="on"
+    gpu_type="all"
 
-      image_backend = "ascii"; # no terminal image protocol assumed over SSH
-    };
-  };
+    image_backend="ascii"
+  '';
 
   programs.bash = {
     enable = true;
