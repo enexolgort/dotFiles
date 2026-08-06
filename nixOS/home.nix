@@ -170,6 +170,18 @@
         _parse_source_dest rename "$@" || return 1
         mv -- "$__src" "$__dst"
       }
+
+      # 'doom' with no arguments launches Emacs in the terminal; 'doom
+      # <anything else>' (sync, install, etc.) still forwards to the real
+      # Doom CLI, so this doesn't break doom sync/doom install like a
+      # plain alias would.
+      doom() {
+        if [ $# -eq 0 ]; then
+          emacs -nw
+        else
+          "$HOME/.config/emacs/bin/doom" "$@"
+        fi
+      }
     '';
   };
 
