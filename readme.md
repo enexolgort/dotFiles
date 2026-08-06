@@ -185,11 +185,19 @@ Without this, the Emacs daemon (and its socket) disappears the moment your SSH s
 Your `~/.config/doom/*.el` files are untouched by Nix either way.
 
 ## Applying future changes
+**Important: `/etc/nixos` is per-machine.** Each system (the real machine and WSL) has its own separate copy, populated from your git repo by `install.sh`. Editing a file in the repo doesn't affect either machine until you've pulled and rebuilt *on that specific machine*:
+
 ```bash
-sudo nixos-rebuild switch --flake /etc/nixos#scrapy       # real machine
-sudo nixos-rebuild switch --flake /etc/nixos#scrapy-wsl   # WSL
+# on whichever machine you want to update:
+cd ~/dotFiles
+git pull
+./install.sh
+sudo nixos-rebuild switch --flake /etc/nixos#scrapy       # or #scrapy-wsl on WSL
 ```
-On the real machine, the system's own hostname matches `vars.hostname`, so you can usually drop the `#scrapy` there specifically:
+
+If you only changed something on one machine and haven't pushed yet, `git pull` obviously won't have anything new — push from wherever you edited first.
+
+Once installed, on the real machine the system's own hostname matches `vars.hostname`, so you can usually drop the `#scrapy` there specifically:
 ```bash
 sudo nixos-rebuild switch --flake /etc/nixos
 ```

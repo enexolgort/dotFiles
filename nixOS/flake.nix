@@ -7,10 +7,7 @@
       url = "github:nix-community/home-manager/release-24.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    nixos-wsl = {
-      url = "github:nix-community/NixOS-WSL";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    nixos-wsl.url = "github:nix-community/NixOS-WSL";
   };
 
   outputs = { self, nixpkgs, home-manager, nixos-wsl, ... }:
@@ -22,6 +19,12 @@
       # your tailnet if you ever run both at once.
       wslVars = vars // { hostname = "${vars.hostname}-wsl"; };
 
+      # NOTE: nixos-wsl deliberately does NOT follow our nixpkgs (see
+      # inputs above) — its own Rust-based utility needs a newer Cargo
+      # than the nixos-24.11 branch ships, so it needs its own pin.
+      # useGlobalPkgs below still refers to *our* nixpkgs (24.11) for the
+      # actual system/home-manager packages — only nixos-wsl's internal
+      # build tooling uses its separate pin.
       mkHomeManagerModule = v: {
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
