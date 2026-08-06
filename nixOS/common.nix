@@ -117,17 +117,16 @@
     bindAddress = "0.0.0.0"; # firewall (trustedInterfaces) restricts real exposure
     adminUser = vars.couchdbAdminUser;
     adminPass = vars.couchdbAdminPass; # CHANGE in vars.nix — see README about secrets
-    extraConfig = ''
-      [chttpd]
-      enable_cors = true
-
-      [cors]
-      origins = app://obsidian.md, capacitor://localhost, http://localhost
-      credentials = true
-      headers = accept, authorization, content-type, origin, referer
-      methods = GET,PUT,POST,HEAD,DELETE
-      max_age = 3600
-    '';
+    extraConfig = {
+      chttpd.enable_cors = "true";
+      cors = {
+        origins = "app://obsidian.md, capacitor://localhost, http://localhost";
+        credentials = "true";
+        headers = "accept, authorization, content-type, origin, referer";
+        methods = "GET,PUT,POST,HEAD,DELETE";
+        max_age = "3600";
+      };
+    };
   };
 
   # ======================================================================
