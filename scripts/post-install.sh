@@ -8,7 +8,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VARS_FILE="$SCRIPT_DIR/nixOS/vars.nix"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+VARS_FILE="$REPO_ROOT/nixOS/vars.nix"
 
 if [ -f "$VARS_FILE" ]; then
   USERNAME="$(nix eval --raw --file "$VARS_FILE" username)"
@@ -25,7 +26,7 @@ sudo loginctl enable-linger "$USERNAME"
 # is a plain overwrite and `doom sync` is idempotent.
 DOOM_BIN="$HOME/.config/emacs/bin/doom"
 DOOM_CONF="$HOME/.config/doom"
-DOOM_SRC_DIR="$SCRIPT_DIR/doom"
+DOOM_SRC_DIR="$REPO_ROOT/doom"
 
 if [ -x "$DOOM_BIN" ]; then
   if [ ! -d "$DOOM_CONF" ]; then

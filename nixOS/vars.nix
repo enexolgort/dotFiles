@@ -6,6 +6,14 @@
   locale = "en_US.UTF-8";
   keyMap = "fr";                # AZERTY. Use "be" for Belgian AZERTY, "us" for QWERTY
 
+  # ==== Optional services ===================================================
+  # scripts/install.sh prompts for these interactively (Enter keeps the
+  # current value) — or just edit them directly here. All default to
+  # enabled.
+  jellyfinEnable = true;
+  obsidianEnable = true;  # CouchDB backend for Obsidian Self-hosted LiveSync
+  gitServerEnable = true; # Forgejo
+
   # ==== Main user ==========================================================
   username = "enexolgort";
   initialPassword = "changeme"; # change on first login with: passwd <username>

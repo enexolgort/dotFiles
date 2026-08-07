@@ -35,6 +35,15 @@ This is the single place to edit for routine changes:
 }
 ```
 
+## Optional services
+`scripts/install.sh` prompts interactively for three toggles — Enter keeps whatever's currently in `vars.nix` (all default to enabled):
+```nix
+jellyfinEnable = true;
+obsidianEnable = true;  # CouchDB backend for Obsidian Self-hosted LiveSync
+gitServerEnable = true; # Forgejo
+```
+Non-interactive runs (piped input, no TTY) skip the prompts and leave these untouched. You can also just edit them directly in `vars.nix` instead of going through the prompt.
+
 ## Extra storage drives (real machine only)
 For physical drives beyond the boot disk (e.g. SATA drives on the ZimaBoard), add them to `vars.nix`'s `extraMounts` list rather than editing `configuration.nix` directly:
 ```nix

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # install.sh
-# Lives at the root of the dotfiles repo; the actual nix files live in
-# ./nixOS/ next to it.
+# Lives in the dotfiles repo's scripts/ folder; the actual nix files
+# live in ../nixOS/ (i.e. repo-root/nixOS/, a sibling of scripts/).
 #
 # 1. Copies flake.nix, configuration.nix, home.nix, vars.nix from
-#    ./nixOS/ into /etc/nixos. hardware-configuration.nix is left alone
+#    ../nixOS/ into /etc/nixos. hardware-configuration.nix is left alone
 #    if a real one already exists at /etc/nixos (it's machine-specific,
 #    never something you want overwritten by the placeholder in git).
 #    NOTE: these are plain copies, not symlinks — editing files in the
@@ -16,7 +16,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-NIXOS_SRC_DIR="$SCRIPT_DIR/nixOS"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+NIXOS_SRC_DIR="$REPO_ROOT/nixOS"
 NIXOS_DIR="/etc/nixos"
 
 if [ ! -d "$NIXOS_SRC_DIR" ]; then
@@ -69,11 +70,59 @@ check_default_passwords() {
 
 check_default_passwords "$NIXOS_SRC_DIR/vars.nix"
 
+# --- 0b. Prompt for which optional services to enable --------------------
+# Edits vars.nix in place based on the answers, so the choice persists
+# (not just for this run) — Enter keeps whatever's currently set.
+_prompt_toggle() {
+  local vars_file="$1" key="$2" question="$3"
+  local current
+
+  current="$(grep -E "^\s*${key}\s*=\s*(true|false)\s*;" "$vars_file" 2>/dev/null \
+    | grep -oE '(true|false)' | head -1)"
+  [ -z "$current" ] && current="true"
+
+  local reply new
+  read -rp "   $question [currently: $current] (y/n, Enter to keep) " reply
+  case "$reply" in
+    "") return 0 ;; # keep current
+    [yY]|[yY][eE][sS]) new="true" ;;
+    [nN]|[nN][oO]) new="false" ;;
+    *) echo "   Unrecognized input, keeping current ($current)"; return 0 ;;
+  esac
+
+  if [ "$new" != "$current" ]; then
+    sed -i "s/${key} = ${current};/${key} = ${new};/" "$vars_file"
+    echo "   -> set $key = $new"
+  fi
+}
+
+prompt_optional_services() {
+  local vars_file="$1"
+
+  if [ ! -f "$vars_file" ]; then
+    return 0
+  fi
+
+  if [ ! -t 0 ]; then
+    echo "==> Non-interactive shell — leaving jellyfinEnable/obsidianEnable/gitServerEnable in vars.nix as-is"
+    return 0
+  fi
+
+  echo
+  echo "==> Optional services (Enter keeps the current vars.nix setting):"
+  _prompt_toggle "$vars_file" "jellyfinEnable" "Enable Jellyfin (media server)?"
+  _prompt_toggle "$vars_file" "obsidianEnable" "Enable Obsidian sync backend (CouchDB)?"
+  _prompt_toggle "$vars_file" "gitServerEnable" "Enable self-hosted git server (Forgejo)?"
+  echo
+}
+
+prompt_optional_services "$NIXOS_SRC_DIR/vars.nix"
+
 # --- 1. Copy the NixOS config into /etc/nixos ---------------------------
 echo "==> Copying NixOS config from $NIXOS_SRC_DIR into $NIXOS_DIR"
 sudo mkdir -p "$NIXOS_DIR"
 
-for f in flake.nix configuration.nix common.nix wsl-configuration.nix home.nix vars.nix; do
+for f in flake.nix configuration.nix wsl-configuration.nix home.nix vars.nix; do
   src="$NIXOS_SRC_DIR/$f"
   dst="$NIXOS_DIR/$f"
 
@@ -95,6 +144,40 @@ for f in flake.nix configuration.nix common.nix wsl-configuration.nix home.nix v
   sudo cp "$src" "$dst"
   echo "==> Copied $f"
 done
+
+# common/ is a directory (split into per-service .nix files) — sync it
+# wholesale rather than file by file, since files can be added/removed
+# there over time.
+if [ -d "$NIXOS_SRC_DIR/common" ]; then
+  if [ -d "$NIXOS_DIR/common" ] && diff -rq "$NIXOS_SRC_DIR/common" "$NIXOS_DIR/common" >/dev/null 2>&1; then
+    echo "==> common/ already up to date, skipping"
+  else
+    if [ -e "$NIXOS_DIR/common" ]; then
+      echo "==> Backing up existing $NIXOS_DIR/common -> $NIXOS_DIR/common.bak"
+      sudo rm -rf "$NIXOS_DIR/common.bak"
+      sudo cp -r "$NIXOS_DIR/common" "$NIXOS_DIR/common.bak"
+    fi
+    sudo rm -rf "$NIXOS_DIR/common"
+    sudo cp -r "$NIXOS_SRC_DIR/common" "$NIXOS_DIR/common"
+    echo "==> Copied common/"
+  fi
+else
+  echo "!! $NIXOS_SRC_DIR/common not found, skipping"
+fi
+
+# secrets.yaml (sops-nix) lives at the repo root, not inside nixOS/ —
+# only present once you've done the doc/secrets.md setup. Copied here
+# too since /etc/nixos is where the flake actually evaluates from, so
+# common/base.nix's relative path to it needs it to physically be here.
+SECRETS_SRC="$REPO_ROOT/secrets.yaml"
+if [ -f "$SECRETS_SRC" ]; then
+  if [ -f "$NIXOS_DIR/secrets.yaml" ] && cmp -s "$SECRETS_SRC" "$NIXOS_DIR/secrets.yaml"; then
+    echo "==> secrets.yaml already up to date, skipping"
+  else
+    sudo cp "$SECRETS_SRC" "$NIXOS_DIR/secrets.yaml"
+    echo "==> Copied secrets.yaml"
+  fi
+fi
 
 # hardware-configuration.nix: only put ours in place if there ISN'T
 # already a real one (e.g. very first run, right after nixos-generate-config

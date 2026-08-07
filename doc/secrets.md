@@ -20,7 +20,7 @@ Off by default (`vars.secretsEnabled = false`) — the plaintext values already 
    ```
    This prints a public key starting with `age1...` — copy it, you need it in step 4.
 
-3. **Move the key to where `common.nix` expects it** (matches `sops.age.keyFile` in the config):
+3. **Move the key to where `common/base.nix` expects it** (matches `sops.age.keyFile` in the config):
    ```bash
    sudo mkdir -p /var/lib/sops-nix
    sudo cp ~/.config/sops/age/keys.txt /var/lib/sops-nix/key.txt
@@ -66,7 +66,7 @@ Off by default (`vars.secretsEnabled = false`) — the plaintext values already 
    cd ~/dotFiles
    git add .sops.yaml secrets.yaml nixOS/vars.nix
    git commit -m "Enable sops-nix secrets"
-   ./install.sh
+   ./scripts/install.sh
    sudo nixos-rebuild switch --flake /etc/nixos
    ```
 

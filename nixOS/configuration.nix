@@ -1,7 +1,7 @@
 # configuration.nix
 # The REAL MACHINE / VM target — bare-metal or VirtualBox-style install
 # with an actual disk and bootloader. Everything shared with the WSL
-# target lives in ./common.nix instead.
+# target lives in ./common/ instead.
 { config, pkgs, lib, vars, ... }:
 
 {
@@ -40,7 +40,7 @@
   # Real-machine only — nmbd needs UDP broadcast networking that WSL2's
   # virtualized NAT adapter doesn't support (it crashes outright there,
   # not just fails to be reachable), so this lives here rather than in
-  # common.nix.
+  # common/.
   services.samba = {
     enable = true;
     openFirewall = true;
@@ -79,5 +79,5 @@
     })
     vars.extraMounts);
 
-  imports = [ ./common.nix ];
+  imports = [ ./common ];
 }

@@ -7,7 +7,7 @@ The network-dependent ones (Tailscale, Jellyfin, CouchDB, Docker) are also expli
 
 **The one thing that stays manual**: Tailscale needs an interactive login once (`sudo tailscale up --ssh`, see [first-boot-setup.md](./first-boot-setup.md)) to join your tailnet the first time. After that, its credentials persist on disk and it reconnects automatically on every subsequent boot with no further action — you don't need to re-run `tailscale up` again unless you explicitly log out or reset the node.
 
-**Also worth knowing**: the Emacs daemon is a *user* systemd service, not a system one — by default it only runs while you're logged in (SSH session, etc). Run `./post-install.sh` once after your first successful rebuild (or just `sudo loginctl enable-linger <username>` directly) if you want it to persist across boots/logouts the same way the system services do.
+**Also worth knowing**: the Emacs daemon is a *user* systemd service, not a system one — by default it only runs while you're logged in (SSH session, etc). Run `./scripts/post-install.sh` once after your first successful rebuild (or just `sudo loginctl enable-linger <username>` directly) if you want it to persist across boots/logouts the same way the system services do.
 
 If you ever want to double check any service actually came up after a reboot:
 ```bash
@@ -15,13 +15,13 @@ systemctl status jellyfin couchdb docker tailscaled sshd smbd
 ```
 
 ## Applying future changes
-**Important: `/etc/nixos` is per-machine.** Each system (the real machine and WSL) has its own separate copy, populated from your git repo by `install.sh`. Editing a file in the repo doesn't affect either machine until you've pulled and rebuilt *on that specific machine*:
+**Important: `/etc/nixos` is per-machine.** Each system (the real machine and WSL) has its own separate copy, populated from your git repo by `scripts/install.sh`. Editing a file in the repo doesn't affect either machine until you've pulled and rebuilt *on that specific machine*:
 
 ```bash
 # on whichever machine you want to update:
 cd ~/dotFiles
 git pull
-./install.sh
+./scripts/install.sh
 sudo nixos-rebuild switch --flake /etc/nixos#scrapy       # or #scrapy-wsl on WSL
 ```
 

@@ -22,7 +22,7 @@ Off by default (`vars.backupEnable = false`). Backs up three things daily:
 4. **Rebuild**:
    ```bash
    cd ~/dotFiles
-   ./install.sh
+   ./scripts/install.sh
    sudo nixos-rebuild switch --flake /etc/nixos
    ```
    The repository initializes automatically on first run (`initialize = true` in the config) — no separate `restic init` needed.
@@ -54,6 +54,6 @@ sudo restic -r <your-backupRepo-value> --password-file /etc/restic-backup-passwo
 ```
 
 ## Retention
-Keeps 7 daily, 4 weekly, 6 monthly snapshots (`pruneOpts` in `common.nix`) — older ones get pruned automatically. Adjust those numbers directly in `common.nix` if you want more/less history.
+Keeps 7 daily, 4 weekly, 6 monthly snapshots (`pruneOpts` in `common/backups.nix`) — older ones get pruned automatically. Adjust those numbers directly in `common/backups.nix` if you want more/less history.
 
 [← back to overview](./overview.md)

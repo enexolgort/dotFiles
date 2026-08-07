@@ -15,15 +15,15 @@ Full documentation lives in [`doc/`](./doc/overview.md):
 ```bash
 git clone <your-dotfiles-repo-url> ~/dotFiles
 cd ~/dotFiles
-./install.sh
+./scripts/install.sh
 sudo nixos-rebuild switch --flake /etc/nixos#scrapy       # or #scrapy-wsl on WSL
-./post-install.sh
+./scripts/post-install.sh
 ```
 See [doc/overview.md](./doc/overview.md) for what each step actually does, and the deploy guides above for first-time setup on a fresh machine.
 
 ## Checking everything's actually reachable
 `check-remote.sh` runs from **any client device on your tailnet** (your laptop, phone via Termux, etc.) — not the server itself — and tests SSH, SFTP, Jellyfin, CouchDB, and optionally Samba all in one go:
 ```bash
-./check-remote.sh --host scrapy-wsl
+./scripts/check-remote.sh --host scrapy-wsl
 ```
 See [doc/first-boot-setup.md](./doc/first-boot-setup.md) for full usage and flags.

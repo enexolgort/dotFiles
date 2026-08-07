@@ -12,11 +12,16 @@
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager, nixos-wsl, sops-nix, ... }:
+  outputs = { self, nixpkgs, home-manager, nixos-wsl, sops-nix, treefmt-nix, ... }:
     let
       vars = import ./vars.nix;
+      pkgs = nixpkgs.legacyPackages.${vars.system};
 
       # Same username/timezone/paths/etc for both targets, but a distinct
       # hostname for WSL so it doesn't collide with the real machine on
@@ -37,7 +42,14 @@
         home-manager.extraSpecialArgs = { vars = v; };
         home-manager.users.${v.username} = import ./home.nix;
       };
+
+      # `nix fmt` / `nix flake check` — see treefmt.nix for what actually
+      # gets formatted/checked.
+      treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
     in {
+      formatter.${vars.system} = treefmtEval.config.build.wrapper;
+      checks.${vars.system}.formatting = treefmtEval.config.build.check self;
+
       nixosConfigurations.${vars.hostname} = nixpkgs.lib.nixosSystem {
         system = vars.system;
         specialArgs = { inherit vars; };

@@ -46,7 +46,7 @@ Emacs also runs as a background daemon (`services.emacs`, socket-activated) so D
 
 **On a server, this needs one extra step the first time**, since systemd user services normally only run while you have an active login session:
 ```bash
-./post-install.sh
+./scripts/post-install.sh
 ```
 (or directly: `sudo loginctl enable-linger <username>`)
 Without this, the Emacs daemon (and its socket) disappears the moment your SSH session ends, and the next `emacsclient` call has to start a fresh one from scratch. With linger enabled, it stays up in the background permanently, same as any system service.
@@ -64,13 +64,13 @@ rename --source /old/name --destination /new/name
 ### Jellyfin config export
 Once your libraries and users are set up the way you want, snapshot them into a local `jellyfin/` folder:
 ```bash
-./export-jellyfin-config.sh
+./scripts/export-jellyfin-config.sh
 ```
 Grabs the raw config/database (excluding regenerable cache/metadata/transcodes), plus a plain-text `libraries.txt` listing each library's name and real path. Pass `--api-key <key>` (from Settings → API Keys → '+' in the Jellyfin dashboard) for a fuller JSON export of libraries and users too. Note: `/var/lib/jellyfin` is also now included in the restic backups if you've enabled those — this script is for a quick standalone snapshot/reference, not a replacement for the real backup.
 
 **Restoring** a snapshot back:
 ```bash
-./restore-jellyfin-config.sh
+./scripts/restore-jellyfin-config.sh
 ```
 Stops Jellyfin, backs up whatever's currently live (to `/var/lib/jellyfin.pre-restore.<timestamp>`, so the restore itself is undoable), restores from `./jellyfin/raw`, fixes ownership, and restarts Jellyfin. Prompts for confirmation before doing anything destructive — pass `--force` to skip that (still takes the safety backup regardless). Use `--input-dir`/`--output-dir` on the two scripts if you keep snapshots somewhere other than `./jellyfin`.
 
@@ -91,10 +91,10 @@ gui-stop    # stop it entirely, back to text console
 The system boots straight to a TTY console as usual — GNOME only runs (and only uses resources) while you've explicitly started it. Real-machine only, not applicable on WSL. If a bare-metal display is attached, `gui-start` should get you straight to the GDM login screen on it.
 
 ## Checking everything's actually reachable
-`check-remote.sh` (repo root) is a client-side health check — run it from **any device on your tailnet**, not the server itself, to verify SSH, SFTP, Jellyfin, and CouchDB are all actually reachable in one shot instead of manually `curl`/`ping`-ing each one:
+`check-remote.sh` (in `scripts/`) is a client-side health check — run it from **any device on your tailnet**, not the server itself, to verify SSH, SFTP, Jellyfin, and CouchDB are all actually reachable in one shot instead of manually `curl`/`ping`-ing each one:
 
 ```bash
-./check-remote.sh --host scrapy-wsl
+./scripts/check-remote.sh --host scrapy-wsl
 ```
 
 Options:

@@ -202,9 +202,9 @@
           set -e
           cd "$repo"
           git pull
-          ./install.sh
+          ./scripts/install.sh
           sudo nixos-rebuild switch --flake /etc/nixos
-          ./post-install.sh
+          ./scripts/post-install.sh
         )
       }
 

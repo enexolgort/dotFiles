@@ -13,7 +13,7 @@
 {
   imports = [
     nixos-wsl.nixosModules.wsl
-    ./common.nix
+    ./common
   ];
 
   wsl = {
