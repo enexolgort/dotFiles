@@ -2,18 +2,15 @@
 # The REAL MACHINE / VM target — bare-metal or VirtualBox-style install
 # with an actual disk and bootloader. Everything shared with the WSL
 # target lives in ./common/ instead.
+{ config, pkgs, lib, vars, ... }:
+
 {
-  config,
-  pkgs,
-  lib,
-  vars,
-  ...
-}: {
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.configurationLimit = 10; # cap boot entries — the ESP has limited space
   boot.loader.efi.canTouchEfiVariables = true;
 
   networking.networkmanager.enable = true;
+
   # ======================================================================
   # GNOME — installed and available, but does NOT auto-start at boot.
   # The system boots straight to a TTY console as normal; GNOME only
@@ -59,7 +56,7 @@
         "read only" = "no";
         "guest ok" = "no";
         "valid users" = vars.username;
-        "force group" = vars.username;
+        "force group" = "media"; # was vars.username — same wrong-group-name bug as storage.nix/sftp.nix, see base.nix's note
         "create mask" = "0664";
         "directory mask" = "0775";
       };
@@ -77,10 +74,10 @@
       value = {
         device = m.device;
         fsType = m.fsType or "ext4";
-        options = m.options or ["defaults" "nofail"];
+        options = m.options or [ "defaults" "nofail" ];
       };
     })
     vars.extraMounts);
 
-  imports = [./common];
+  imports = [ ./common ];
 }

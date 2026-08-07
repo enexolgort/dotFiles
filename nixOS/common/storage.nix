@@ -3,19 +3,19 @@
 # each service's own file, since the directory structure itself is a
 # cross-cutting concern shared by Jellyfin, Samba, SFTP, and backups —
 # one place to see the whole layout at a glance.
+{ config, pkgs, lib, vars, ... }:
+
 {
-  config,
-  pkgs,
-  lib,
-  vars,
-  ...
-}: {
   systemd.tmpfiles.rules = [
-    # Media library. Jellyfin runs as the "jellyfin" user/group.
-    "d ${vars.mediaDir} 0775 jellyfin ${vars.username} -"
-    "d ${vars.mediaDir}/movies 0775 jellyfin ${vars.username} -"
-    "d ${vars.mediaDir}/shows 0775 jellyfin ${vars.username} -"
-    "d ${vars.mediaDir}/music 0775 jellyfin ${vars.username} -"
+    # Media library. Jellyfin runs as the "jellyfin" user; "media" is a
+    # dedicated shared group (see base.nix) that the admin user and
+    # sftpuser are both members of, so they can actually write here too —
+    # not the user's own primary group, which for a normal NixOS user is
+    # just the generic "users" (gid 100), not a same-named group.
+    "d ${vars.mediaDir} 0775 jellyfin media -"
+    "d ${vars.mediaDir}/movies 0775 jellyfin media -"
+    "d ${vars.mediaDir}/shows 0775 jellyfin media -"
+    "d ${vars.mediaDir}/music 0775 jellyfin media -"
 
     # SFTP chroot root — must stay root:root (sshd's strict chroot
     # security check), actual writable content is the bind mount inside
@@ -25,7 +25,8 @@
 
     # Where install.sh clones your project repos. /data itself is
     # root-owned by default, so this needs an explicit rule rather than
-    # relying on a plain mkdir.
-    "d ${vars.projectsDir} 0755 ${vars.username} ${vars.username} -"
+    # relying on a plain mkdir. Group is "users" (gid 100) — the real
+    # default group every normal NixOS user is actually in.
+    "d ${vars.projectsDir} 0755 ${vars.username} users -"
   ];
 }

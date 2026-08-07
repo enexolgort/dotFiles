@@ -1,13 +1,9 @@
 # common/base.nix — the truly foundational stuff that doesn't belong to
 # any single service: system identity, Nix itself, secrets, the user
 # account.
+{ config, pkgs, lib, vars, ... }:
+
 {
-  config,
-  pkgs,
-  lib,
-  vars,
-  ...
-}: {
   networking.hostName = vars.hostname;
 
   time.timeZone = vars.timeZone;
@@ -15,7 +11,7 @@
   console.keyMap = vars.keyMap;
 
   # --- Nix settings ----------------------------------------------------
-  nix.settings.experimental-features = ["nix-command" "flakes"];
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
   nixpkgs.config.allowUnfree = true; # jellyfin's ffmpeg wants some unfree codecs
   # These are pinned to exact version strings from nixos-24.11's emacs
   # build — after bumping to nixos-25.11, the default Emacs is likely a
@@ -53,18 +49,25 @@
   # Set a real password after first boot with: passwd <username>
   # (or, once vars.secretsEnabled is true, the password comes from the
   # sops-managed hash instead — see doc/secrets.md)
-  users.users.${vars.username} =
-    {
-      isNormalUser = true;
-      description = "Media server admin";
-      extraGroups = ["wheel" "jellyfin" "docker"];
-      shell = pkgs.bash;
-    }
-    // (
-      if vars.secretsEnabled
-      then {hashedPasswordFile = config.sops.secrets.userPasswordHash.path;}
-      else {initialPassword = vars.initialPassword;}
-    ); # CHANGE on first login
+  #
+  # NOTE ON GROUPS: earlier versions of this config wrongly assumed
+  # NixOS auto-creates a group with the same name as a normal user
+  # (isNormalUser). It doesn't — the real default primary group is the
+  # generic "users" (gid 100). That wrong assumption silently broke
+  # mediaDir's ownership from the start (chown to a nonexistent group
+  # fails). Fixed properly here with an explicit, dedicated "media"
+  # group instead of relying on any assumption about the user's own
+  # group name.
+  users.groups.media = {};
+
+  users.users.${vars.username} = {
+    isNormalUser = true;
+    description = "Media server admin";
+    extraGroups = [ "wheel" "jellyfin" "docker" "media" ];
+    shell = pkgs.bash;
+  } // (if vars.secretsEnabled
+    then { hashedPasswordFile = config.sops.secrets.userPasswordHash.path; }
+    else { initialPassword = vars.initialPassword; }); # CHANGE on first login
 
   system.stateVersion = "24.11"; # do not change after initial install
 }

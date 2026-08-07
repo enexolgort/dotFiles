@@ -13,11 +13,13 @@
   users.users.sftpuser = {
     isSystemUser = true;
     group = "sftponly";
-    # mediaDir is owned jellyfin:${vars.username}, mode 0775 — without
-    # being in that group, sftpuser can list the directory (the 0775
-    # "other" bits allow read+execute) but can't actually write into it.
-    # This is what grants real write access, not just listing.
-    extraGroups = [ "sftponly" vars.username ];
+    # mediaDir is owned jellyfin:media, mode 0775 — this is what actually
+    # grants write access, not just the 0775 "other" read+execute bits
+    # (which only allow listing). "media" here is a real, explicitly
+    # created shared group (see base.nix) — an earlier version of this
+    # tried using vars.username as a group name directly, which was
+    # wrong (see base.nix's note on why).
+    extraGroups = [ "sftponly" "media" ];
     shell = "${pkgs.shadow}/bin/nologin";
     openssh.authorizedKeys.keys = vars.sftpPublicKeys;
   };
