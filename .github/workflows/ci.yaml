@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  nix-flake-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      # Runs both nixosConfigurations' evaluation and the treefmt
+      # formatting check (wired in via flake.nix's checks output) — this
+      # is what would have caught the duplicate-attribute and syntax
+      # mistakes made by hand throughout this project's development,
+      # before they ever reached a real nixos-rebuild.
+      - name: nix flake check
+        run: |
+          cd nixOS
+          nix flake check --all-systems
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Shellcheck everything in scripts/
+        run: shellcheck scripts/*.sh
