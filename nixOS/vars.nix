@@ -1,17 +1,17 @@
 {
   # ==== System ============================================================
-  system = "x86_64-linux";      # aarch64-linux if on ARM
+  system = "x86_64-linux"; # aarch64-linux if on ARM
   hostname = "scrapy";
   timeZone = "Europe/Paris";
   locale = "en_US.UTF-8";
-  keyMap = "fr";                # AZERTY. Use "be" for Belgian AZERTY, "us" for QWERTY
+  keyMap = "fr"; # AZERTY. Use "be" for Belgian AZERTY, "us" for QWERTY
 
   # ==== Optional services ===================================================
   # scripts/install.sh prompts for these interactively (Enter keeps the
   # current value) — or just edit them directly here. All default to
   # enabled.
   jellyfinEnable = true;
-  obsidianEnable = true;  # CouchDB backend for Obsidian Self-hosted LiveSync
+  obsidianEnable = true; # CouchDB backend for Obsidian Self-hosted LiveSync
   gitServerEnable = true; # Forgejo
 
   # ==== Main user ==========================================================

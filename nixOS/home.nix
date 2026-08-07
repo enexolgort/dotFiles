@@ -1,6 +1,10 @@
-{ config, pkgs, lib, vars, ... }:
-
 {
+  config,
+  pkgs,
+  lib,
+  vars,
+  ...
+}: {
   home.username = vars.username;
   home.homeDirectory = "/home/${vars.username}";
   home.stateVersion = "24.11";
@@ -35,16 +39,16 @@
     fd
     coreutils
     imagemagick
-    sqlite            # org-roam
+    sqlite # org-roam
     fontconfig
     nerd-fonts.jetbrains-mono # patched font for doom's modeline icons
-    gnutls             # emacs package.el / straight.el needs this for https
+    gnutls # emacs package.el / straight.el needs this for https
     unzip
     neofetch
   ];
 
   # --- Auto-bootstrap Doom Emacs on first home-manager activation ----
-  home.activation.installDoomEmacs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+  home.activation.installDoomEmacs = lib.hm.dag.entryAfter ["writeBoundary"] ''
     DOOM_DIR="$HOME/.config/emacs"
     DOOM_CONF="$HOME/.config/doom"
 
@@ -60,7 +64,7 @@
   '';
 
   # Put doom's bin on PATH
-  home.sessionPath = [ "$HOME/.config/emacs/bin" ];
+  home.sessionPath = ["$HOME/.config/emacs/bin"];
 
   # --- Neofetch: shown automatically on every interactive login -------
   # home-manager has no dedicated neofetch module, so this is a plain

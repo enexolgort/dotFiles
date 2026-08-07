@@ -18,59 +18,69 @@
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, nixos-wsl, sops-nix, treefmt-nix, ... }:
-    let
-      vars = import ./vars.nix;
-      pkgs = nixpkgs.legacyPackages.${vars.system};
+  outputs = {
+    self,
+    nixpkgs,
+    home-manager,
+    nixos-wsl,
+    sops-nix,
+    treefmt-nix,
+    ...
+  }: let
+    vars = import ./vars.nix;
+    pkgs = nixpkgs.legacyPackages.${vars.system};
 
-      # Same username/timezone/paths/etc for both targets, but a distinct
-      # hostname for WSL so it doesn't collide with the real machine on
-      # your tailnet if you ever run both at once.
-      wslVars = vars // { hostname = "${vars.hostname}-wsl"; };
+    # Same username/timezone/paths/etc for both targets, but a distinct
+    # hostname for WSL so it doesn't collide with the real machine on
+    # your tailnet if you ever run both at once.
+    wslVars = vars // {hostname = "${vars.hostname}-wsl";};
 
-      # NOTE: nixos-wsl's own nixpkgs input isn't following ours, but its
-      # NixOS module still builds nixos-wsl-utils against *our* nixpkgs
-      # (that's just how nixosSystem's pkgs resolution works, regardless
-      # of the flake input's own separate pin) — so the thing that
-      # actually matters for that build to succeed is that OUR nixpkgs
-      # (below) is new enough. We were on nixos-24.11 (EOL, Cargo too old
-      # for nixos-wsl-utils' edition2024 requirement); nixos-25.11 fixes
-      # this at the root.
-      mkHomeManagerModule = v: {
-        home-manager.useGlobalPkgs = true;
-        home-manager.useUserPackages = true;
-        home-manager.extraSpecialArgs = { vars = v; };
-        home-manager.users.${v.username} = import ./home.nix;
-      };
-
-      # `nix fmt` / `nix flake check` — see treefmt.nix for what actually
-      # gets formatted/checked.
-      treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
-    in {
-      formatter.${vars.system} = treefmtEval.config.build.wrapper;
-      checks.${vars.system}.formatting = treefmtEval.config.build.check self;
-
-      nixosConfigurations.${vars.hostname} = nixpkgs.lib.nixosSystem {
-        system = vars.system;
-        specialArgs = { inherit vars; };
-        modules = [
-          ./hardware-configuration.nix
-          ./configuration.nix
-          home-manager.nixosModules.home-manager
-          sops-nix.nixosModules.sops
-          (mkHomeManagerModule vars)
-        ];
-      };
-
-      nixosConfigurations.${wslVars.hostname} = nixpkgs.lib.nixosSystem {
-        system = wslVars.system;
-        specialArgs = { vars = wslVars; inherit nixos-wsl; };
-        modules = [
-          ./wsl-configuration.nix
-          home-manager.nixosModules.home-manager
-          sops-nix.nixosModules.sops
-          (mkHomeManagerModule wslVars)
-        ];
-      };
+    # NOTE: nixos-wsl's own nixpkgs input isn't following ours, but its
+    # NixOS module still builds nixos-wsl-utils against *our* nixpkgs
+    # (that's just how nixosSystem's pkgs resolution works, regardless
+    # of the flake input's own separate pin) — so the thing that
+    # actually matters for that build to succeed is that OUR nixpkgs
+    # (below) is new enough. We were on nixos-24.11 (EOL, Cargo too old
+    # for nixos-wsl-utils' edition2024 requirement); nixos-25.11 fixes
+    # this at the root.
+    mkHomeManagerModule = v: {
+      home-manager.useGlobalPkgs = true;
+      home-manager.useUserPackages = true;
+      home-manager.extraSpecialArgs = {vars = v;};
+      home-manager.users.${v.username} = import ./home.nix;
     };
+
+    # `nix fmt` / `nix flake check` — see treefmt.nix for what actually
+    # gets formatted/checked.
+    treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
+  in {
+    formatter.${vars.system} = treefmtEval.config.build.wrapper;
+    checks.${vars.system}.formatting = treefmtEval.config.build.check self;
+
+    nixosConfigurations.${vars.hostname} = nixpkgs.lib.nixosSystem {
+      system = vars.system;
+      specialArgs = {inherit vars;};
+      modules = [
+        ./hardware-configuration.nix
+        ./configuration.nix
+        home-manager.nixosModules.home-manager
+        sops-nix.nixosModules.sops
+        (mkHomeManagerModule vars)
+      ];
+    };
+
+    nixosConfigurations.${wslVars.hostname} = nixpkgs.lib.nixosSystem {
+      system = wslVars.system;
+      specialArgs = {
+        vars = wslVars;
+        inherit nixos-wsl;
+      };
+      modules = [
+        ./wsl-configuration.nix
+        home-manager.nixosModules.home-manager
+        sops-nix.nixosModules.sops
+        (mkHomeManagerModule wslVars)
+      ];
+    };
+  };
 }

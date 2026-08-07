@@ -2,9 +2,13 @@
 # backed by CouchDB. Obsidian's official paid Sync service is NOT
 # self-hostable; this is the community-standard alternative. Reachable
 # only via your tailnet at http://<tailscale-ip>:5984
-{ config, pkgs, lib, vars, ... }:
-
 {
+  config,
+  pkgs,
+  lib,
+  vars,
+  ...
+}: {
   services.couchdb = {
     enable = vars.obsidianEnable;
     bindAddress = "0.0.0.0"; # legacy [httpd] section — CouchDB 3.x doesn't actually serve from here
@@ -26,7 +30,7 @@
   };
 
   systemd.services.couchdb = {
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
+    after = ["network-online.target"];
+    wants = ["network-online.target"];
   };
 }

@@ -3,9 +3,13 @@
 # directory (your Obsidian notes — easy to forget, genuinely
 # irreplaceable), Jellyfin's config/library database, your Forgejo git
 # repos, and your dotfiles/projects.
-{ config, pkgs, lib, vars, ... }:
-
 {
+  config,
+  pkgs,
+  lib,
+  vars,
+  ...
+}: {
   services.restic.backups.mediaserver = lib.mkIf vars.backupEnable {
     initialize = true;
     repository = vars.backupRepo;

@@ -3,9 +3,13 @@
 # covers this port automatically, same as Jellyfin/CouchDB.
 # Lightweight (single Go binary, SQLite by default) — fine for modest
 # hardware. Reachable at http://<tailscale-ip>:3000
-{ config, pkgs, lib, vars, ... }:
-
 {
+  config,
+  pkgs,
+  lib,
+  vars,
+  ...
+}: {
   services.forgejo = {
     enable = vars.gitServerEnable;
     settings.server = {
@@ -27,6 +31,6 @@
       --email "${vars.gitAdminUser}@${vars.hostname}.local" || true
   '';
 
-  systemd.services.forgejo.after = [ "network-online.target" ];
-  systemd.services.forgejo.wants = [ "network-online.target" ];
+  systemd.services.forgejo.after = ["network-online.target"];
+  systemd.services.forgejo.wants = ["network-online.target"];
 }

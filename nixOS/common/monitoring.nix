@@ -1,18 +1,22 @@
 # common/monitoring.nix — runs check-remote.sh against this machine's
 # own tailscale IP every 15 minutes, logs the result, and POSTs to
 # vars.notifyWebhook on failure if one's configured.
-{ config, pkgs, lib, vars, ... }:
-
 {
+  config,
+  pkgs,
+  lib,
+  vars,
+  ...
+}: {
   systemd.services.healthcheck = {
     description = "Periodic health check of remote-facing services";
-    after = [ "network-online.target" "tailscaled.service" ];
-    wants = [ "network-online.target" ];
+    after = ["network-online.target" "tailscaled.service"];
+    wants = ["network-online.target"];
     serviceConfig = {
       Type = "oneshot";
       User = vars.username;
     };
-    path = [ pkgs.curl pkgs.bash pkgs.tailscale ];
+    path = [pkgs.curl pkgs.bash pkgs.tailscale];
     script = ''
       set -uo pipefail
       SCRIPT="/home/${vars.username}/dotFiles/scripts/check-remote.sh"
@@ -39,7 +43,7 @@
 
   systemd.timers.healthcheck = {
     description = "Run healthcheck.service every 15 minutes";
-    wantedBy = [ "timers.target" ];
+    wantedBy = ["timers.target"];
     timerConfig = {
       OnCalendar = "*:0/15";
       Persistent = true;
