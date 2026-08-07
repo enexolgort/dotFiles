@@ -16,7 +16,7 @@ This is the single place to edit for routine changes:
 
   mediaDir = "/data/media";
   sftpDir = "/data/sftp";
-  sftpPublicKey = "ssh-ed25519 AAAA... your-key";
+  sftpPublicKeys = [ "ssh-ed25519 AAAA... your-key" ];
 
   couchdbAdminUser = "admin";
   couchdbAdminPass = "changeme-couchdb";
@@ -72,7 +72,7 @@ Change the hostname, rename the user, swap the SSH key, whatever — edit `vars.
 | Variable | What to change |
 |---|---|
 | `couchdbAdminPass` | a real password |
-| `sftpPublicKey` | your actual SSH public key |
+| `sftpPublicKeys` | list of SSH public keys — one per device you want SFTP access from |
 | `hostname` / `username` / `timeZone` / `keyMap` | if desired |
 | `gitEmail` | your real email |
 

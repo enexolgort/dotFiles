@@ -1,17 +1,17 @@
 {
   # ==== System ============================================================
-  system = "x86_64-linux"; # aarch64-linux if on ARM
+  system = "x86_64-linux";      # aarch64-linux if on ARM
   hostname = "scrapy";
   timeZone = "Europe/Paris";
   locale = "en_US.UTF-8";
-  keyMap = "fr"; # AZERTY. Use "be" for Belgian AZERTY, "us" for QWERTY
+  keyMap = "fr";                # AZERTY. Use "be" for Belgian AZERTY, "us" for QWERTY
 
   # ==== Optional services ===================================================
   # scripts/install.sh prompts for these interactively (Enter keeps the
   # current value) — or just edit them directly here. All default to
   # enabled.
   jellyfinEnable = true;
-  obsidianEnable = true; # CouchDB backend for Obsidian Self-hosted LiveSync
+  obsidianEnable = true;  # CouchDB backend for Obsidian Self-hosted LiveSync
   gitServerEnable = true; # Forgejo
 
   # ==== Main user ==========================================================
@@ -25,7 +25,12 @@
   projectsDir = "/data/projects"; # where install.sh clones your project repos
 
   # ==== SFTP ===============================================================
-  sftpPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... replace-with-your-key sftpuser@yourlaptop";
+  # List, not a single key — add one entry per device you want SFTP
+  # access from (laptop, another laptop, phone, etc.)
+  sftpPublicKeys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... replace-with-your-key sftpuser@yourlaptop"
+    # "ssh-ed25519 AAAA... another-device-here"
+  ];
 
   # ==== CouchDB / Obsidian LiveSync =======================================
   couchdbAdminUser = "admin";
