@@ -56,7 +56,7 @@
       options = ["defaults" "nofail"];
     }
     {
-      device = "/dev/disk/by-uuid/<new-uuid-from-blkid>";
+      device = "/dev/disk/by-uuid/00208e9d-d9d2-4993-b92c-85b2ff15ed33";
       mountPoint = "/data/backup"; # or wherever you actually want this one
       fsType = "ext4";
       options = ["defaults" "nofail"];
