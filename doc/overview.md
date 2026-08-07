@@ -62,7 +62,9 @@ dotFiles/
 ```bash
 nix fmt
 ```
-formats all `.nix` files under `nixOS/` (via `treefmt` + `alejandra`). `nix flake check` runs the same formatting check plus a full evaluation of both `nixosConfigurations` — catches syntax mistakes (like a duplicate attribute or a bad module reference) before they ever reach a real `nixos-rebuild`. Both also run automatically in CI on every push via `.github/workflows/ci.yml`, alongside `shellcheck` on everything in `scripts/`.
+formats all `.nix` files under `nixOS/` (via `treefmt` + `alejandra`). Both run automatically in CI on every push via `.github/workflows/ci.yml`, alongside `shellcheck` on everything in `scripts/`.
+
+CI checks formatting for both targets, but only **fully builds `scrapy-wsl`** — not `scrapy`. That's deliberate, not a gap: the real-machine target depends on `hardware-configuration.nix`, which is a placeholder in this repo on purpose (it's generated from actual hardware, and a CI runner has no way to genuinely satisfy that assertion). `scrapy-wsl` doesn't depend on it at all, and covers the vast majority of the actual config (everything in `common/`) — so it's the one target CI can meaningfully validate end-to-end. The real-machine target can only be validated by actually rebuilding on the real hardware.
 
 ## Doc index
 - [configuration.md](./configuration.md) — `vars.nix` reference, design assumptions
