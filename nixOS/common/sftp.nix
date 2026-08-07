@@ -1,25 +1,25 @@
 # common/sftp.nix — dedicated, chrooted, tailnet-only upload user
 # (separate from your normal admin account). Drops files straight into
 # the media dir. Directory layout itself is in storage.nix.
+{ config, pkgs, lib, vars, ... }:
+
 {
-  config,
-  pkgs,
-  lib,
-  vars,
-  ...
-}: {
   fileSystems."${vars.sftpDir}/upload" = {
     device = vars.mediaDir;
-    options = ["bind"];
+    options = [ "bind" ];
   };
 
   users.groups.sftponly = {};
   users.users.sftpuser = {
     isSystemUser = true;
     group = "sftponly";
-    extraGroups = ["sftponly"];
+    # mediaDir is owned jellyfin:${vars.username}, mode 0775 — without
+    # being in that group, sftpuser can list the directory (the 0775
+    # "other" bits allow read+execute) but can't actually write into it.
+    # This is what grants real write access, not just listing.
+    extraGroups = [ "sftponly" vars.username ];
     shell = "${pkgs.shadow}/bin/nologin";
-    openssh.authorizedKeys.keys = [vars.sftpPublicKey];
+    openssh.authorizedKeys.keys = vars.sftpPublicKeys;
   };
 
   services.openssh.extraConfig = ''
