@@ -4,7 +4,7 @@
   hostname = "scrapy";
   timeZone = "Europe/Paris";
   locale = "en_US.UTF-8";
-  keyMap = "us";                # e.g. "fr" for AZERTY on console
+  keyMap = "fr";                # AZERTY. Use "be" for Belgian AZERTY, "us" for QWERTY
 
   # ==== Main user ==========================================================
   username = "enexolgort";
@@ -24,4 +24,39 @@
 
   # ==== Samba ==============================================================
   sambaWorkgroup = "WORKGROUP";
+
+  # ==== Extra storage drives (real machine only, e.g. SATA drives on the
+  # ZimaBoard) — mounted automatically at boot. Find the UUID with
+  # `sudo blkid` once the drive is connected. "nofail" is deliberate: a
+  # missing/disconnected drive won't block boot (or cause the kind of
+  # initrd hang you were just fighting) — the system just comes up
+  # without that mount instead of hanging indefinitely waiting for it.
+  extraMounts = [
+    # {
+    #   device = "/dev/disk/by-uuid/XXXX-XXXX-XXXX-XXXX";
+    #   mountPoint = "/mnt/storage1";
+    #   fsType = "ext4";
+    #   options = [ "defaults" "nofail" ];
+    # }
+  ];
+
+  # ==== Backups (restic) ===================================================
+  # Off by default — flip to true once backupRepo actually points
+  # somewhere real. See doc/backups.md for setup and restore instructions.
+  backupEnable = false;
+  backupRepo = "/mnt/backup/restic-repo"; # ideally a separate physical drive, not the same disk as the data being backed up
+  backupPassword = "changeme-restic-backup-password"; # encrypts the restic repo — see doc/secrets.md once sops-nix is set up
+
+  # ==== Secrets (sops-nix) =================================================
+  # Off by default — the plaintext values above (initialPassword,
+  # backupPassword) keep working until you complete the one-time sops-nix
+  # setup in doc/secrets.md and flip this on. couchdbAdminPass is NOT
+  # covered — see doc/secrets.md for why.
+  secretsEnabled = false;
+
+  # ==== Monitoring ==========================================================
+  # Runs check-remote.sh every 15 minutes from the server itself. Leave
+  # blank to just log results; set to a webhook URL (ntfy.sh, Discord,
+  # generic POST endpoint) to also get notified on failure.
+  notifyWebhook = "";
 }

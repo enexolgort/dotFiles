@@ -8,9 +8,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixos-wsl.url = "github:nix-community/NixOS-WSL";
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager, nixos-wsl, ... }:
+  outputs = { self, nixpkgs, home-manager, nixos-wsl, sops-nix, ... }:
     let
       vars = import ./vars.nix;
 
@@ -41,6 +45,7 @@
           ./hardware-configuration.nix
           ./configuration.nix
           home-manager.nixosModules.home-manager
+          sops-nix.nixosModules.sops
           (mkHomeManagerModule vars)
         ];
       };
@@ -51,6 +56,7 @@
         modules = [
           ./wsl-configuration.nix
           home-manager.nixosModules.home-manager
+          sops-nix.nixosModules.sops
           (mkHomeManagerModule wslVars)
         ];
       };

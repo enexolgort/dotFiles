@@ -8,7 +8,7 @@ This is the single place to edit for routine changes:
   hostname = "scrapy";
   timeZone = "Europe/Paris";
   locale = "en_US.UTF-8";
-  keyMap = "us";                 # "fr" for AZERTY, etc.
+  keyMap = "fr";                 # AZERTY. "be" for Belgian AZERTY, "us" for QWERTY
 
   username = "enexolgort";
   initialPassword = "changeme";
@@ -22,8 +22,40 @@ This is the single place to edit for routine changes:
   couchdbAdminPass = "changeme-couchdb";
 
   sambaWorkgroup = "WORKGROUP";
+
+  extraMounts = [ ];              # extra physical drives — see below
+
+  backupEnable = false;           # restic backups — see backups.md
+  backupRepo = "/mnt/backup/restic-repo";
+  backupPassword = "changeme-restic-backup-password";
+
+  secretsEnabled = false;         # sops-nix — see secrets.md
+
+  notifyWebhook = "";             # health-check failure notifications
 }
 ```
+
+## Extra storage drives (real machine only)
+For physical drives beyond the boot disk (e.g. SATA drives on the ZimaBoard), add them to `vars.nix`'s `extraMounts` list rather than editing `configuration.nix` directly:
+```nix
+extraMounts = [
+  {
+    device = "/dev/disk/by-uuid/XXXX-XXXX-XXXX-XXXX";
+    mountPoint = "/mnt/storage1";
+    fsType = "ext4";
+    options = [ "defaults" "nofail" ];
+  }
+];
+```
+Find the UUID with `sudo blkid` once the drive is physically connected. `nofail` is deliberate and set by default — without it, a missing or disconnected drive would block boot entirely (the exact kind of hang you'd want to avoid). With it, the system just comes up without that mount if the drive isn't there, instead of hanging indefinitely.
+
+This only applies to the real-machine target (`configuration.nix`) — WSL doesn't have physical drives to mount this way.
+
+## Backups, secrets, and monitoring
+Three more opt-in features, all off by default so nothing changes until you deliberately turn them on:
+- **Backups** (restic) — see [backups.md](./backups.md)
+- **Secrets** (sops-nix, replacing the plaintext passwords in this file) — see [secrets.md](./secrets.md)
+- **Monitoring** — runs `check-remote.sh` every 15 minutes from the server itself; set `notifyWebhook` to a URL (ntfy.sh, Discord webhook, etc.) to get notified on failure, or leave it blank to just log results (`journalctl -u healthcheck.service`)
 
 Change the hostname, rename the user, swap the SSH key, whatever — edit `vars.nix`, run `nixos-rebuild switch`, done. No more hunting across three files (that's exactly how the group-ownership bug happened during an early rename — this is the fix for that class of mistake).
 

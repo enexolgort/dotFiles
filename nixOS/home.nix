@@ -182,6 +182,31 @@
           "$HOME/.config/emacs/bin/doom" "$@"
         fi
       }
+
+      # 'rebuild' — no explicit #attr needed, nixos-rebuild auto-detects
+      # from this machine's own hostname (works for both scrapy and
+      # scrapy-wsl automatically).
+      alias rebuild='sudo nixos-rebuild switch --flake /etc/nixos'
+
+      # 'update-server' — the full loop we've run by hand dozens of
+      # times: pull latest config, sync it into /etc/nixos, rebuild,
+      # then run post-install (Doom sync, linger, etc.). Adjust the repo
+      # path below if yours differs from ~/dotFiles.
+      update-server() {
+        local repo="$HOME/dotFiles"
+        if [ ! -d "$repo" ]; then
+          echo "Repo not found at $repo — edit the 'update-server' function in home.nix if it lives elsewhere." >&2
+          return 1
+        fi
+        (
+          set -e
+          cd "$repo"
+          git pull
+          ./install.sh
+          sudo nixos-rebuild switch --flake /etc/nixos
+          ./post-install.sh
+        )
+      }
     '';
   };
 

@@ -9,7 +9,8 @@
 #    never something you want overwritten by the placeholder in git).
 #    NOTE: these are plain copies, not symlinks — editing files in the
 #    repo won't take effect until you re-run this script.
-# 2. Creates ~/projects and clones transmission-API + transmission-webUi
+# 2. Creates the projects dir (path from vars.nix's projectsDir, default
+#    /data/projects) and clones transmission-API + transmission-webUi
 #    into it (skips any repo that's already cloned).
 
 set -euo pipefail
@@ -106,14 +107,29 @@ else
   echo "==> Existing hardware-configuration.nix found at $NIXOS_DIR, leaving it untouched"
 fi
 
-# --- 2. Set up ~/projects and clone the repos ---------------------------
-PROJECTS_DIR="$HOME/projects"
+# --- 2. Set up the projects dir and clone the repos ---------------------
+# Read the actual path from vars.nix rather than hardcoding it, so this
+# stays correct if you ever change projectsDir.
+if command -v nix >/dev/null 2>&1; then
+  PROJECTS_DIR="$(nix eval --raw --file "$NIXOS_SRC_DIR/vars.nix" projectsDir 2>/dev/null || echo "")"
+fi
+if [ -z "${PROJECTS_DIR:-}" ]; then
+  PROJECTS_DIR="/data/projects"
+  echo "!! Could not read projectsDir from vars.nix (nix not available or eval failed), defaulting to $PROJECTS_DIR"
+fi
+
 REPOS=(
   "https://github.com/enexolgort/transmission-API"
   "https://github.com/enexolgort/transmission-webUi"
 )
 
-mkdir -p "$PROJECTS_DIR"
+# /data is root-owned by default, so plain mkdir would fail here on a
+# fresh machine before the first rebuild has run the tmpfiles rule that
+# creates $PROJECTS_DIR with correct ownership. This makes it work
+# either way — harmless no-op if the directory and ownership are already
+# correct (the normal case, after at least one rebuild).
+sudo mkdir -p "$PROJECTS_DIR"
+sudo chown "$(id -u):$(id -g)" "$PROJECTS_DIR"
 echo "==> Projects dir: $PROJECTS_DIR"
 
 for repo_url in "${REPOS[@]}"; do

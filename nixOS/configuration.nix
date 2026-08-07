@@ -6,6 +6,7 @@
 
 {
   boot.loader.systemd-boot.enable = true;
+  boot.loader.systemd-boot.configurationLimit = 10; # cap boot entries — the ESP has limited space
   boot.loader.efi.canTouchEfiVariables = true;
 
   networking.networkmanager.enable = true;
@@ -37,6 +38,21 @@
     };
   };
   # Set the samba password once, after first boot: sudo smbpasswd -a <username>
+
+  # --- Extra storage drives (SATA drives on the ZimaBoard, etc.) ------
+  # Declared in vars.nix as a list — generated into real fileSystems
+  # entries here. "nofail" is set per-entry in vars.nix by default so a
+  # missing/disconnected drive doesn't block boot.
+  fileSystems = builtins.listToAttrs (map
+    (m: {
+      name = m.mountPoint;
+      value = {
+        device = m.device;
+        fsType = m.fsType or "ext4";
+        options = m.options or [ "defaults" "nofail" ];
+      };
+    })
+    vars.extraMounts);
 
   imports = [ ./common.nix ];
 }
