@@ -55,12 +55,18 @@
     fsType = "ext4";
     options = [ "defaults" "nofail" ];
   }
+  {
+    device = "/dev/disk/by-uuid/<new-uuid-from-blkid>";
+    mountPoint = "/data/backup"; # or wherever you actually want this one
+    fsType = "ext4";
+    options = [ "defaults" "nofail" ];
+  }
   ];
   # ==== Backups (restic) ===================================================
   # Off by default — flip to true once backupRepo actually points
   # somewhere real. See doc/backups.md for setup and restore instructions.
-  backupEnable = false;
-  backupRepo = "/mnt/backup/restic-repo"; # ideally a separate physical drive, not the same disk as the data being backed up
+  backupEnable = true;
+  backupRepo = "/data/backup/restic-repo"; # ideally a separate physical drive, not the same disk as the data being backed up
   backupPassword = "changeme-restic-backup-password"; # encrypts the restic repo — see doc/secrets.md once sops-nix is set up
 
   # ==== Secrets (sops-nix) =================================================
