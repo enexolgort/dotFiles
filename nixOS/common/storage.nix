@@ -3,9 +3,13 @@
 # each service's own file, since the directory structure itself is a
 # cross-cutting concern shared by Jellyfin, Samba, SFTP, and backups —
 # one place to see the whole layout at a glance.
-{ config, pkgs, lib, vars, ... }:
-
 {
+  config,
+  pkgs,
+  lib,
+  vars,
+  ...
+}: {
   systemd.tmpfiles.rules = [
     # Media library. Jellyfin runs as the "jellyfin" user; "media" is a
     # dedicated shared group (see base.nix) that the admin user and

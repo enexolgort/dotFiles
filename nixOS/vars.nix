@@ -26,7 +26,7 @@
 
   # ==== SFTP ===============================================================
   sftpPublicKeys = [
-	"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPfCPT1zuWITFVKSAOmkLAr4wpXkHLDxzNUVptgI88lf sftp-laptop"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPfCPT1zuWITFVKSAOmkLAr4wpXkHLDxzNUVptgI88lf sftp-laptop"
   ];
 
   # ==== CouchDB / Obsidian LiveSync =======================================
@@ -47,20 +47,20 @@
   # missing/disconnected drive won't block boot (or cause the kind of
   # initrd hang you were just fighting) — the system just comes up
   # without that mount instead of hanging indefinitely waiting for it.
- 
-   extraMounts = [
-  {
-    device = "/dev/disk/by-uuid/fae138ec-cca2-4d6a-ad07-583494d934a7";
-    mountPoint = "/data/media";
-    fsType = "ext4";
-    options = [ "defaults" "nofail" ];
-  }
-  {
-    device = "/dev/disk/by-uuid/<new-uuid-from-blkid>";
-    mountPoint = "/data/backup"; # or wherever you actually want this one
-    fsType = "ext4";
-    options = [ "defaults" "nofail" ];
-  }
+
+  extraMounts = [
+    {
+      device = "/dev/disk/by-uuid/fae138ec-cca2-4d6a-ad07-583494d934a7";
+      mountPoint = "/data/media";
+      fsType = "ext4";
+      options = ["defaults" "nofail"];
+    }
+    {
+      device = "/dev/disk/by-uuid/<new-uuid-from-blkid>";
+      mountPoint = "/data/backup"; # or wherever you actually want this one
+      fsType = "ext4";
+      options = ["defaults" "nofail"];
+    }
   ];
   # ==== Backups (restic) ===================================================
   # Off by default — flip to true once backupRepo actually points

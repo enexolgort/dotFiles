@@ -2,9 +2,13 @@
 # The REAL MACHINE / VM target — bare-metal or VirtualBox-style install
 # with an actual disk and bootloader. Everything shared with the WSL
 # target lives in ./common/ instead.
-{ config, pkgs, lib, vars, ... }:
-
 {
+  config,
+  pkgs,
+  lib,
+  vars,
+  ...
+}: {
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.configurationLimit = 10; # cap boot entries — the ESP has limited space
   boot.loader.efi.canTouchEfiVariables = true;
@@ -74,10 +78,10 @@
       value = {
         device = m.device;
         fsType = m.fsType or "ext4";
-        options = m.options or [ "defaults" "nofail" ];
+        options = m.options or ["defaults" "nofail"];
       };
     })
     vars.extraMounts);
 
-  imports = [ ./common ];
+  imports = [./common];
 }
