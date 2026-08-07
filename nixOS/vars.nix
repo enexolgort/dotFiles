@@ -1,17 +1,17 @@
 {
   # ==== System ============================================================
-  system = "x86_64-linux";      # aarch64-linux if on ARM
-  hostname = "scrapy";
+  system = "x86_64-linux"; # aarch64-linux if on ARM
+  hostname = "dusty";
   timeZone = "Europe/Paris";
   locale = "en_US.UTF-8";
-  keyMap = "fr";                # AZERTY. Use "be" for Belgian AZERTY, "us" for QWERTY
+  keyMap = "fr"; # AZERTY. Use "be" for Belgian AZERTY, "us" for QWERTY
 
   # ==== Optional services ===================================================
   # scripts/install.sh prompts for these interactively (Enter keeps the
   # current value) — or just edit them directly here. All default to
   # enabled.
   jellyfinEnable = true;
-  obsidianEnable = true;  # CouchDB backend for Obsidian Self-hosted LiveSync
+  obsidianEnable = true; # CouchDB backend for Obsidian Self-hosted LiveSync
   gitServerEnable = true; # Forgejo
 
   # ==== Main user ==========================================================
@@ -25,11 +25,8 @@
   projectsDir = "/data/projects"; # where install.sh clones your project repos
 
   # ==== SFTP ===============================================================
-  # List, not a single key — add one entry per device you want SFTP
-  # access from (laptop, another laptop, phone, etc.)
   sftpPublicKeys = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... replace-with-your-key sftpuser@yourlaptop"
-    # "ssh-ed25519 AAAA... another-device-here"
+	"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPfCPT1zuWITFVKSAOmkLAr4wpXkHLDxzNUVptgI88lf sftp-laptop"
   ];
 
   # ==== CouchDB / Obsidian LiveSync =======================================
@@ -50,15 +47,15 @@
   # missing/disconnected drive won't block boot (or cause the kind of
   # initrd hang you were just fighting) — the system just comes up
   # without that mount instead of hanging indefinitely waiting for it.
-  extraMounts = [
-    # {
-    #   device = "/dev/disk/by-uuid/XXXX-XXXX-XXXX-XXXX";
-    #   mountPoint = "/mnt/storage1";
-    #   fsType = "ext4";
-    #   options = [ "defaults" "nofail" ];
-    # }
+ 
+   extraMounts = [
+  {
+    device = "/dev/disk/by-uuid/fae138ec-cca2-4d6a-ad07-583494d934a7";
+    mountPoint = "/data/media";
+    fsType = "ext4";
+    options = [ "defaults" "nofail" ];
+  }
   ];
-
   # ==== Backups (restic) ===================================================
   # Off by default — flip to true once backupRepo actually points
   # somewhere real. See doc/backups.md for setup and restore instructions.
