@@ -84,6 +84,10 @@
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];
   };
+  systemd.services.forgejo = {
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+  };
 
   # ======================================================================
   # TAILSCALE
@@ -158,6 +162,33 @@
   };
 
   # ======================================================================
+  # GIT SERVER (Forgejo) — self-hosted, tailnet-only like everything else
+  # here. No firewall changes needed at all: trustedInterfaces above
+  # already covers this new port automatically, same as Jellyfin/CouchDB.
+  # Lightweight (single Go binary, SQLite by default) — fine for this
+  # hardware. Reachable at http://<tailscale-ip>:3000
+  # ======================================================================
+  services.forgejo = {
+    enable = true;
+    settings.server = {
+      HTTP_ADDR = "0.0.0.0"; # firewall (trustedInterfaces) restricts real exposure
+      HTTP_PORT = 3000;
+      ROOT_URL = "http://${vars.hostname}:3000/";
+    };
+    settings.service.DISABLE_REGISTRATION = true; # single-user server — no public signup
+  };
+
+  # Declaratively ensures your admin account exists — idempotent (`|| true`
+  # means it doesn't fail on every subsequent rebuild once already
+  # created). This is the officially documented pattern from the NixOS
+  # wiki's own Forgejo page.
+  systemd.services.forgejo.preStart = ''
+    ${lib.getExe config.services.forgejo.package} admin user create \
+      --admin --username ${vars.gitAdminUser} --password "${vars.gitAdminPass}" \
+      --email "${vars.gitAdminUser}@${vars.hostname}.local" || true
+  '';
+
+  # ======================================================================
   # DOCKER
   # ======================================================================
   virtualisation.docker = {
@@ -225,6 +256,7 @@
       vars.mediaDir
       "/var/lib/couchdb"
       "/var/lib/jellyfin"
+      "/var/lib/forgejo"
       "/home/${vars.username}/dotFiles"
       vars.projectsDir
     ];

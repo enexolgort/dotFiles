@@ -14,6 +14,7 @@
   # ==== Storage paths ======================================================
   mediaDir = "/data/media";
   sftpDir = "/data/sftp";
+  projectsDir = "/data/projects"; # where install.sh clones your project repos
 
   # ==== SFTP ===============================================================
   sftpPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... replace-with-your-key sftpuser@yourlaptop";
@@ -21,6 +22,11 @@
   # ==== CouchDB / Obsidian LiveSync =======================================
   couchdbAdminUser = "admin";
   couchdbAdminPass = "changeme-couchdb"; # plaintext in the Nix store — see README re: secrets
+
+  # ==== Git server (Forgejo) ================================================
+  # NOTE: "admin" itself is a reserved username in Forgejo — pick anything else.
+  gitAdminUser = "gituser";
+  gitAdminPass = "changeme-git"; # plaintext until secretsEnabled — see doc/secrets.md
 
   # ==== Samba ==============================================================
   sambaWorkgroup = "WORKGROUP";
