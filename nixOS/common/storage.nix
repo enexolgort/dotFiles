@@ -3,13 +3,9 @@
 # each service's own file, since the directory structure itself is a
 # cross-cutting concern shared by Jellyfin, Samba, SFTP, and backups —
 # one place to see the whole layout at a glance.
+{ config, pkgs, lib, vars, ... }:
+
 {
-  config,
-  pkgs,
-  lib,
-  vars,
-  ...
-}: {
   systemd.tmpfiles.rules = [
     # Media library. Jellyfin runs as the "jellyfin" user; "media" is a
     # dedicated shared group (see base.nix) that the admin user and
@@ -17,9 +13,9 @@
     # not the user's own primary group, which for a normal NixOS user is
     # just the generic "users" (gid 100), not a same-named group.
     "d ${vars.mediaDir} 0775 jellyfin media -"
-    "d ${vars.mediaDir}/movies 0775 jellyfin media -"
-    "d ${vars.mediaDir}/shows 0775 jellyfin media -"
-    "d ${vars.mediaDir}/music 0775 jellyfin media -"
+    "d ${vars.mediaDir}/Movies 0775 jellyfin media -"
+    "d ${vars.mediaDir}/Music 0775 jellyfin media -"
+    "d ${vars.mediaDir}/Photo 0775 jellyfin media -"
 
     # SFTP chroot root — must stay root:root (sshd's strict chroot
     # security check), actual writable content is the bind mount inside
