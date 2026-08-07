@@ -128,6 +128,7 @@
     "d ${vars.mediaDir}/music 0775 jellyfin ${vars.username} -"
     "d ${vars.sftpDir} 0755 root root -"
     "d ${vars.sftpDir}/upload 0755 root root -"
+    "d ${vars.projectsDir} 0755 ${vars.username} ${vars.username} -"
   ];
 
   # ======================================================================
@@ -223,7 +224,15 @@
     paths = [
       vars.mediaDir
       "/var/lib/couchdb"
+      "/var/lib/jellyfin"
       "/home/${vars.username}/dotFiles"
+      vars.projectsDir
+    ];
+    exclude = [
+      # Regenerable / often huge — not meaningfully "config", skip them
+      "/var/lib/jellyfin/cache"
+      "/var/lib/jellyfin/metadata"
+      "/var/lib/jellyfin/transcodes"
     ];
     timerConfig = {
       OnCalendar = "daily";

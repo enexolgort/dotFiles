@@ -207,6 +207,12 @@
           ./post-install.sh
         )
       }
+
+      # GNOME is installed but doesn't auto-start at boot (see
+      # configuration.nix) — these just wrap the systemd target switch
+      # to start/stop it on demand, real-machine only.
+      alias gui-start='sudo systemctl isolate graphical.target'
+      alias gui-stop='sudo systemctl isolate multi-user.target'
     '';
   };
 

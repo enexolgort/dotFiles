@@ -61,6 +61,26 @@ copy --source /src/dir --destination /dst/dir
 rename --source /old/name --destination /new/name
 ```
 
+### Jellyfin config export
+Once your libraries and users are set up the way you want, snapshot them into a local `jellyfin/` folder:
+```bash
+./export-jellyfin-config.sh
+```
+Grabs the raw config/database (excluding regenerable cache/metadata/transcodes), plus a plain-text `libraries.txt` listing each library's name and real path. Pass `--api-key <key>` (from Settings → API Keys → '+' in the Jellyfin dashboard) for a fuller JSON export of libraries and users too. Note: `/var/lib/jellyfin` is also now included in the restic backups if you've enabled those — this script is for a quick standalone snapshot/reference, not a replacement for the real backup.
+
+**Restoring** a snapshot back:
+```bash
+./restore-jellyfin-config.sh
+```
+Stops Jellyfin, backs up whatever's currently live (to `/var/lib/jellyfin.pre-restore.<timestamp>`, so the restore itself is undoable), restores from `./jellyfin/raw`, fixes ownership, and restarts Jellyfin. Prompts for confirmation before doing anything destructive — pass `--force` to skip that (still takes the safety backup regardless). Use `--input-dir`/`--output-dir` on the two scripts if you keep snapshots somewhere other than `./jellyfin`.
+
+### GNOME (on-demand, doesn't run at boot)
+```bash
+gui-start   # start GNOME right now
+gui-stop    # stop it entirely, back to text console
+```
+The system boots straight to a TTY console as usual — GNOME only runs (and only uses resources) while you've explicitly started it. Real-machine only, not applicable on WSL. If a bare-metal display is attached, `gui-start` should get you straight to the GDM login screen on it.
+
 ## Checking everything's actually reachable
 `check-remote.sh` (repo root) is a client-side health check — run it from **any device on your tailnet**, not the server itself, to verify SSH, SFTP, Jellyfin, and CouchDB are all actually reachable in one shot instead of manually `curl`/`ping`-ing each one:
 
