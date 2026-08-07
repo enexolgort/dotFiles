@@ -1,7 +1,7 @@
 {
   # ==== System ============================================================
   system = "x86_64-linux"; # aarch64-linux if on ARM
-  hostname = "dusty";
+  hostname = "headless";
   timeZone = "Europe/Paris";
   locale = "en_US.UTF-8";
   keyMap = "fr"; # AZERTY. Use "be" for Belgian AZERTY, "us" for QWERTY
@@ -10,9 +10,9 @@
   # scripts/install.sh prompts for these interactively (Enter keeps the
   # current value) — or just edit them directly here. All default to
   # enabled.
-  jellyfinEnable = true;
-  obsidianEnable = true; # CouchDB backend for Obsidian Self-hosted LiveSync
-  gitServerEnable = true; # Forgejo
+  jellyfinEnable = false;
+  obsidianEnable = false; # CouchDB backend for Obsidian Self-hosted LiveSync
+  gitServerEnable = false; # Forgejo
 
   # ==== Main user ==========================================================
   username = "enexolgort";
@@ -49,23 +49,12 @@
   # without that mount instead of hanging indefinitely waiting for it.
 
   extraMounts = [
-    {
-      device = "/dev/disk/by-uuid/fae138ec-cca2-4d6a-ad07-583494d934a7";
-      mountPoint = "/data/media";
-      fsType = "ext4";
-      options = ["defaults" "nofail"];
-    }
-    {
-      device = "/dev/disk/by-uuid/00208e9d-d9d2-4993-b92c-85b2ff15ed33";
-      mountPoint = "/data/backup"; # or wherever you actually want this one
-      fsType = "ext4";
-      options = ["defaults" "nofail"];
-    }
+    
   ];
   # ==== Backups (restic) ===================================================
   # Off by default — flip to true once backupRepo actually points
   # somewhere real. See doc/backups.md for setup and restore instructions.
-  backupEnable = true;
+  backupEnable = false;
   backupRepo = "/data/backup/restic-repo"; # ideally a separate physical drive, not the same disk as the data being backed up
   backupPassword = "changeme-restic-backup-password"; # encrypts the restic repo — see doc/secrets.md once sops-nix is set up
 
