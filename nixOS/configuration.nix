@@ -14,7 +14,6 @@
   boot.loader.efi.canTouchEfiVariables = true;
 
   networking.networkmanager.enable = true;
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
   # ======================================================================
   # GNOME — installed and available, but does NOT auto-start at boot.
   # The system boots straight to a TTY console as normal; GNOME only
