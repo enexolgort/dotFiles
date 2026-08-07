@@ -1,0 +1,3 @@
+# Jellyfin libraries (name -> real path)
+# Generated 2026-08-07T14:56:46Z
+
