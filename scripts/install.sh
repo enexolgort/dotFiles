@@ -194,7 +194,7 @@ fi
 # Read the actual path from vars.nix rather than hardcoding it, so this
 # stays correct if you ever change projectsDir.
 if command -v nix >/dev/null 2>&1; then
-  PROJECTS_DIR="$(nix eval --raw --file "$NIXOS_SRC_DIR/vars.nix" projectsDir 2>/dev/null || echo "")"
+  PROJECTS_DIR="$(nix --extra-experimental-features 'nix-command' eval --raw --file "$NIXOS_SRC_DIR/vars.nix" projectsDir 2>/dev/null || echo "")"
 fi
 if [ -z "${PROJECTS_DIR:-}" ]; then
   PROJECTS_DIR="/data/projects"

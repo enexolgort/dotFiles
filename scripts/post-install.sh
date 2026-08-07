@@ -12,7 +12,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 VARS_FILE="$REPO_ROOT/nixOS/vars.nix"
 
 if [ -f "$VARS_FILE" ]; then
-  USERNAME="$(nix eval --raw --file "$VARS_FILE" username)"
+  USERNAME="$(nix --extra-experimental-features 'nix-command' eval --raw --file "$VARS_FILE" username)"
 else
   echo "!! Could not find $VARS_FILE, falling back to \$USER ($USER)"
   USERNAME="$USER"
