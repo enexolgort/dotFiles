@@ -17,6 +17,7 @@
     ./forgejo.nix
     ./ai.nix
     ./n8n.nix
+    ./monitoring-hub.nix
     ./docker.nix
     ./sftp.nix
     ./backups.nix

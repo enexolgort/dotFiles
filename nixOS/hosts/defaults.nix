@@ -36,6 +36,8 @@
   # obsidianEnable    = true | false;
   # gitServerEnable   = true | false;
   # aiEnable          = true | false;   # Ollama + Open WebUI, see common/ai.nix
+  # n8nEnable         = true | false;   # workflow automation, see common/n8n.nix
+  # monitoringHubEnable = true | false; # Prometheus+Grafana+restic REST server, see common/monitoring-hub.nix
   # sftpEnable        = true | false;   # chrooted upload account, see common/sftp.nix
   # projectRepos      = [ "https://..." ... ];  # cloned into projectsDir by install.sh
   #

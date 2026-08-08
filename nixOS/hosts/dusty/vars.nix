@@ -9,6 +9,8 @@
   gitServerEnable = false;
   aiEnable = false;
   sftpEnable = true;
+  n8nEnable = false;
+  monitoringHubEnable = false;
 
   # sftpEnable = true, so these need to actually be here.
   sftpDir = "/data/sftp";

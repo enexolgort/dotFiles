@@ -10,6 +10,7 @@
   aiEnable = true; # Ollama + Open WebUI — see common/ai.nix
   sftpEnable = false;
   n8nEnable = false;
+  monitoringHubEnable = false;
 
   # Smallest usable model, given weak/CPU-only hardware — auto-downloaded
   # on rebuild. Add more entries here later once you want to try bigger
