@@ -1,10 +1,6 @@
+{ config, pkgs, lib, vars, ... }:
+
 {
-  config,
-  pkgs,
-  lib,
-  vars,
-  ...
-}: {
   home.username = vars.username;
   home.homeDirectory = "/home/${vars.username}";
   home.stateVersion = "24.11";
@@ -39,16 +35,16 @@
     fd
     coreutils
     imagemagick
-    sqlite # org-roam
+    sqlite            # org-roam
     fontconfig
     nerd-fonts.jetbrains-mono # patched font for doom's modeline icons
-    gnutls # emacs package.el / straight.el needs this for https
+    gnutls             # emacs package.el / straight.el needs this for https
     unzip
     neofetch
   ];
 
   # --- Auto-bootstrap Doom Emacs on first home-manager activation ----
-  home.activation.installDoomEmacs = lib.hm.dag.entryAfter ["writeBoundary"] ''
+  home.activation.installDoomEmacs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     DOOM_DIR="$HOME/.config/emacs"
     DOOM_CONF="$HOME/.config/doom"
 
@@ -64,7 +60,7 @@
   '';
 
   # Put doom's bin on PATH
-  home.sessionPath = ["$HOME/.config/emacs/bin"];
+  home.sessionPath = [ "$HOME/.config/emacs/bin" ];
 
   # --- Neofetch: shown automatically on every interactive login -------
   # home-manager has no dedicated neofetch module, so this is a plain
@@ -217,6 +213,45 @@
       # to start/stop it on demand, real-machine only.
       alias gui-start='sudo systemctl isolate graphical.target'
       alias gui-stop='sudo systemctl isolate multi-user.target'
+
+      # 'backup --nixVars' / 'restore --nixVars' — copy vars.nix to/from
+      # ~/backup, a quick manual safety net separate from the full
+      # restic backups. Flag-based so more options (--dotfiles, --doom,
+      # etc.) can be added later without renaming anything.
+      backup() {
+        case "$1" in
+          --nixVars)
+            mkdir -p "$HOME/backup"
+            if [ ! -f "$HOME/dotFiles/nixOS/vars.nix" ]; then
+              echo "Not found: $HOME/dotFiles/nixOS/vars.nix" >&2
+              return 1
+            fi
+            cp "$HOME/dotFiles/nixOS/vars.nix" "$HOME/backup/vars.nix" \
+              && echo "Backed up vars.nix -> $HOME/backup/vars.nix"
+            ;;
+          *)
+            echo "Usage: backup --nixVars" >&2
+            return 1
+            ;;
+        esac
+      }
+
+      restore() {
+        case "$1" in
+          --nixVars)
+            if [ ! -f "$HOME/backup/vars.nix" ]; then
+              echo "No backup found at $HOME/backup/vars.nix — run 'backup --nixVars' first" >&2
+              return 1
+            fi
+            cp "$HOME/backup/vars.nix" "$HOME/dotFiles/nixOS/vars.nix" \
+              && echo "Restored vars.nix -> $HOME/dotFiles/nixOS/vars.nix"
+            ;;
+          *)
+            echo "Usage: restore --nixVars" >&2
+            return 1
+            ;;
+        esac
+      }
     '';
   };
 
