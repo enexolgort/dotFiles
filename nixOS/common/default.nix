@@ -16,6 +16,7 @@
     ./couchdb.nix
     ./forgejo.nix
     ./ai.nix
+    ./n8n.nix
     ./docker.nix
     ./sftp.nix
     ./backups.nix
