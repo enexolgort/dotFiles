@@ -9,6 +9,7 @@
   gitServerEnable = true;
   aiEnable = false;
   sftpEnable = false;
+  n8nEnable = true;
 
   # obsidianEnable = true, so these need to actually be here.
   couchdbAdminUser = "admin";
