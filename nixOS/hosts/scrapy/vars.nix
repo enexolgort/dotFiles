@@ -2,7 +2,7 @@
   hostname = "scrapy";
   username = "enexolgort";
   gitEmail = "enexolgort@scrapy.local";
-  targetType = "real";
+  targetType = "wsl";
 
   jellyfinEnable = false;
   obsidianEnable = false;
