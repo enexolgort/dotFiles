@@ -1,25 +1,48 @@
 # common/n8n.nix — self-hosted workflow automation (Zapier-style),
 # pairs naturally with local AI on the same host. Off unless a host sets
-# n8nEnable = true. Real NixOS module
-# (nixos/modules/services/misc/n8n.nix), not something built from
-# scratch. Default port 5678.
+# n8nEnable = true.
+#
+# NOT using the native nixpkgs services.n8n package here — it builds
+# n8n's entire TypeScript monorepo from source via pnpm/turbo, which
+# reliably OOMs during the build on lower-memory machines (confirmed:
+# tripling headless's available WSL2 memory did not help at all, which
+# means it's Node's own internal V8 heap ceiling being hit, not a real
+# system-memory shortage — more system RAM was never going to fix it).
+#
+# Using the official pre-built Docker image instead: zero local
+# compilation, so this whole class of problem disappears regardless of
+# root cause.
+#
+# NETWORKING NOTE: deliberately using Docker's --network=host mode, NOT
+# a port mapping (`ports = [ "5678:5678" ]`). A port mapping goes
+# through Docker's own NAT/port-publishing, which can bypass the NixOS
+# firewall's trustedInterfaces restriction entirely — exactly the risk
+# flagged and avoided earlier in this project for the
+# transmission-webUi container. Host networking means n8n binds
+# directly on this machine's real network stack, same as any native
+# service, so it stays genuinely tailnet-only like everything else here.
 { config, pkgs, lib, vars, ... }:
 
 lib.mkIf vars.n8nEnable {
-  services.n8n = {
-    enable = true;
-    # Explicit rather than trusting the default — we've now hit two
-    # other services (CouchDB, Open WebUI) that silently bound to
-    # 127.0.0.1-only. Cheaper to be explicit here than debug a third one.
+  virtualisation.oci-containers.backend = "docker";
+
+  virtualisation.oci-containers.containers.n8n = {
+    image = "docker.n8n.io/n8nio/n8n:latest";
+    autoStart = true;
+    extraOptions = [ "--network=host" ];
+    volumes = [ "/var/lib/n8n:/home/node/.n8n" ];
     environment = {
-      N8N_HOST = "0.0.0.0";
-      N8N_LISTEN_ADDRESS = "0.0.0.0";
       N8N_PORT = "5678";
     };
   };
 
-  systemd.services.n8n = {
-    after = [ "network-online.target" ];
+  systemd.tmpfiles.rules = [
+    "d /var/lib/n8n 0755 root root -"
+  ];
+
+  systemd.services.docker-n8n = {
+    after = [ "network-online.target" "docker.service" ];
     wants = [ "network-online.target" ];
   };
 }
+
