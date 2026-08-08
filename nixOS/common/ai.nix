@@ -16,6 +16,7 @@ lib.mkIf vars.aiEnable {
     # to "cuda" or "rocm" here for real acceleration — CPU inference
     # works but is slow for anything beyond small models.
     acceleration = false;
+    loadModels = vars.aiModels; # auto-downloaded on rebuild, see hosts/scrapy/vars.nix
   };
 
   services.open-webui = {
