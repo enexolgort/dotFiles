@@ -2,7 +2,7 @@
 
 Multiple machine profiles from one repo — Jellyfin, Tailscale (with Tailscale SSH), Docker, chrooted SFTP, CouchDB-backed Obsidian sync, a self-hosted git server, local AI models (Ollama + Open WebUI), Samba, and Doom Emacs — all locked down to your tailnet, deployable to real machines or NixOS-WSL, choosing which services each machine runs.
 
-[./diagram.png]()
+![Homelab architecture](./homelab-architecture.svg)
 
 Currently three hosts: `dusty` (Jellyfin), `headless` (Obsidian + git server, WSL), `scrapy` (local AI).
 
