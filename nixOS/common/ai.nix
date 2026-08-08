@@ -12,11 +12,9 @@
 lib.mkIf vars.aiEnable {
   services.ollama = {
     enable = true;
-    # CPU-only by default. If scrapy has a compatible GPU, override this
-    # to "cuda" or "rocm" here for real acceleration — CPU inference
-    # works but is slow for anything beyond small models.
     acceleration = false;
-    loadModels = vars.aiModels; # auto-downloaded on rebuild, see hosts/scrapy/vars.nix
+    loadModels = vars.aiModels;
+    host = "0.0.0.0";   # was defaulting to 127.0.0.1-only — same bug as CouchDB/Open WebUI
   };
 
   services.open-webui = {
