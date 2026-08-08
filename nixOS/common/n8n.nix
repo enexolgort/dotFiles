@@ -37,7 +37,12 @@ lib.mkIf vars.n8nEnable {
   };
 
   systemd.tmpfiles.rules = [
-    "d /var/lib/n8n 0755 root root -"
+    # 1000 = the "node" user's UID *inside* the official n8n container.
+    # This is a bind mount, not a Docker-managed volume, so there's no
+    # UID remapping — the container's internal non-root user genuinely
+    # needs to own this directory on the host side to write to it at
+    # all. root:root here caused a hard EACCES crash-loop on first run.
+    "d /var/lib/n8n 0755 1000 1000 -"
   ];
 
   systemd.services.docker-n8n = {
