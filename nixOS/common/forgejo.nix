@@ -15,6 +15,8 @@ lib.mkIf vars.gitServerEnable {
       ROOT_URL = "http://${vars.hostname}:3000/";
     };
     settings.service.DISABLE_REGISTRATION = true; # single-user server — no public signup
+    settings.webhook.ALLOWED_HOST_LIST = "loopback";   # allow webhooks to call 127.0.0.1 / localhost — needed since n8n runs on the same host
+
   };
 
   # Declaratively ensures your admin account exists — idempotent (`|| true`
