@@ -33,6 +33,12 @@ lib.mkIf vars.n8nEnable {
     volumes = [ "/var/lib/n8n:/home/node/.n8n" ];
     environment = {
       N8N_PORT = "5678";
+      # n8n defaults to expecting HTTPS and sets a secure-only cookie,
+      # which breaks over plain HTTP. Same reasoning as every other
+      # service in this repo (Jellyfin, CouchDB, Forgejo, Open WebUI):
+      # Tailscale's own WireGuard encryption already covers the
+      # transport layer, and this is never exposed beyond the tailnet.
+      N8N_SECURE_COOKIE = "false";
     };
   };
 
@@ -50,4 +56,3 @@ lib.mkIf vars.n8nEnable {
     wants = [ "network-online.target" ];
   };
 }
-
