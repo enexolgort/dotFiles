@@ -21,6 +21,13 @@ lib.mkIf vars.aiEnable {
 
   services.open-webui = {
     enable = true;
+    # Defaults to 127.0.0.1-only otherwise — same class of bug we hit
+    # with CouchDB earlier. NOT using host = ""; despite that being the
+    # "bind all interfaces" convention some docs mention — there's a
+    # known nixpkgs bug (NixOS/nixpkgs#378188) where the empty string
+    # breaks shell quoting in the generated systemd unit and the service
+    # fails to start entirely. An explicit "0.0.0.0" avoids that bug.
+    host = "0.0.0.0";
     environment = {
       OLLAMA_API_BASE_URL = "http://127.0.0.1:11434/api";
       OLLAMA_BASE_URL = "http://127.0.0.1:11434";
