@@ -15,6 +15,7 @@
     ./jellyfin.nix
     ./couchdb.nix
     ./forgejo.nix
+    ./ai.nix
     ./docker.nix
     ./sftp.nix
     ./backups.nix

@@ -8,14 +8,9 @@
 # No bootloader, no disk partitioning, no hardware-configuration.nix here —
 # the wsl.nix module (from the nixos-wsl input) handles all of that, since
 # WSL2 owns the underlying virtual disk and boot process itself.
+{ config, pkgs, lib, vars, nixos-wsl, ... }:
+
 {
-  config,
-  pkgs,
-  lib,
-  vars,
-  nixos-wsl,
-  ...
-}: {
   imports = [
     nixos-wsl.nixosModules.wsl
     ./common

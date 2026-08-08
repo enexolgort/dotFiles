@@ -1,5 +1,5 @@
 {
-  description = "NixOS multimedia server (Jellyfin) with Doom Emacs — real machine + WSL";
+  description = "Multi-machine NixOS config — real machine + WSL targets, one profile per host under hosts/";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
@@ -18,69 +18,57 @@
     };
   };
 
-  outputs = {
-    self,
-    nixpkgs,
-    home-manager,
-    nixos-wsl,
-    sops-nix,
-    treefmt-nix,
-    ...
-  }: let
-    vars = import ./vars.nix;
-    pkgs = nixpkgs.legacyPackages.${vars.system};
+  outputs = { self, nixpkgs, home-manager, nixos-wsl, sops-nix, treefmt-nix, ... }:
+    let
+      lib = nixpkgs.lib;
+      defaults = import ./hosts/defaults.nix;
 
-    # Same username/timezone/paths/etc for both targets, but a distinct
-    # hostname for WSL so it doesn't collide with the real machine on
-    # your tailnet if you ever run both at once.
-    wslVars = vars // {hostname = "${vars.hostname}-wsl";};
+      # Every subdirectory of ./hosts is a machine profile. defaults.nix
+      # itself is a file (not a directory), so it's naturally excluded
+      # from this list — no special-casing needed.
+      hostsDir = ./hosts;
+      hostNames = builtins.attrNames (
+        lib.filterAttrs (name: type: type == "directory") (builtins.readDir hostsDir)
+      );
 
-    # NOTE: nixos-wsl's own nixpkgs input isn't following ours, but its
-    # NixOS module still builds nixos-wsl-utils against *our* nixpkgs
-    # (that's just how nixosSystem's pkgs resolution works, regardless
-    # of the flake input's own separate pin) — so the thing that
-    # actually matters for that build to succeed is that OUR nixpkgs
-    # (below) is new enough. We were on nixos-24.11 (EOL, Cargo too old
-    # for nixos-wsl-utils' edition2024 requirement); nixos-25.11 fixes
-    # this at the root.
-    mkHomeManagerModule = v: {
-      home-manager.useGlobalPkgs = true;
-      home-manager.useUserPackages = true;
-      home-manager.extraSpecialArgs = {vars = v;};
-      home-manager.users.${v.username} = import ./home.nix;
-    };
-
-    # `nix fmt` / `nix flake check` — see treefmt.nix for what actually
-    # gets formatted/checked.
-    treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
-  in {
-    formatter.${vars.system} = treefmtEval.config.build.wrapper;
-    checks.${vars.system}.formatting = treefmtEval.config.build.check self;
-
-    nixosConfigurations.${vars.hostname} = nixpkgs.lib.nixosSystem {
-      system = vars.system;
-      specialArgs = {inherit vars;};
-      modules = [
-        ./hardware-configuration.nix
-        ./configuration.nix
-        home-manager.nixosModules.home-manager
-        sops-nix.nixosModules.sops
-        (mkHomeManagerModule vars)
-      ];
-    };
-
-    nixosConfigurations.${wslVars.hostname} = nixpkgs.lib.nixosSystem {
-      system = wslVars.system;
-      specialArgs = {
-        vars = wslVars;
-        inherit nixos-wsl;
+      mkHomeManagerModule = vars: {
+        home-manager.useGlobalPkgs = true;
+        home-manager.useUserPackages = true;
+        home-manager.extraSpecialArgs = { inherit vars; };
+        home-manager.users.${vars.username} = import ./home.nix;
       };
-      modules = [
-        ./wsl-configuration.nix
-        home-manager.nixosModules.home-manager
-        sops-nix.nixosModules.sops
-        (mkHomeManagerModule wslVars)
-      ];
+
+      mkHost = name:
+        let
+          hostVars = import (hostsDir + "/${name}/vars.nix");
+          vars = defaults // hostVars;
+          hardwareFile = hostsDir + "/${name}/hardware-configuration.nix";
+        in
+        nixpkgs.lib.nixosSystem {
+          system = vars.system;
+          specialArgs =
+            { inherit vars; }
+            // lib.optionalAttrs (vars.targetType == "wsl") { inherit nixos-wsl; };
+          modules =
+            [
+              (if vars.targetType == "wsl" then ./wsl-configuration.nix else ./configuration.nix)
+              home-manager.nixosModules.home-manager
+              sops-nix.nixosModules.sops
+              (mkHomeManagerModule vars)
+            ]
+            ++ lib.optional (vars.targetType == "real") hardwareFile;
+        };
+
+      system = defaults.system;
+      pkgs = nixpkgs.legacyPackages.${system};
+      treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
+    in
+    {
+      formatter.${system} = treefmtEval.config.build.wrapper;
+      checks.${system}.formatting = treefmtEval.config.build.check self;
+
+      nixosConfigurations = builtins.listToAttrs (
+        map (name: { inherit name; value = mkHost name; }) hostNames
+      );
     };
-  };
 }

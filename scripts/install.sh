@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
 # install.sh
 # Lives in the dotfiles repo's scripts/ folder; the actual nix files
-# live in ../nixOS/ (i.e. repo-root/nixOS/, a sibling of scripts/).
+# live in ../nixOS/ (repo-root/nixOS/, a sibling of scripts/).
 #
-# 1. Copies flake.nix, configuration.nix, home.nix, vars.nix from
-#    ../nixOS/ into /etc/nixos. hardware-configuration.nix is left alone
-#    if a real one already exists at /etc/nixos (it's machine-specific,
-#    never something you want overwritten by the placeholder in git).
-#    NOTE: these are plain copies, not symlinks — editing files in the
-#    repo won't take effect until you re-run this script.
-# 2. Creates the projects dir (path from vars.nix's projectsDir, default
-#    /data/projects) and clones transmission-API + transmission-webUi
-#    into it (skips any repo that's already cloned).
+# MULTI-HOST: this repo defines several machine profiles under
+# nixOS/hosts/<name>/ (each with its own vars.nix; shared defaults live
+# in hosts/defaults.nix). This script:
+#   1. Lets you pick which host you're installing/updating right now —
+#      pass it as an argument (`./install.sh dusty`) or get an
+#      interactive menu if you don't.
+#   2. Copies the WHOLE nixOS/ tree into /etc/nixos — every host's files
+#      need to exist for the flake to evaluate at all, even though only
+#      one host actually gets built right now. Each host's
+#      hardware-configuration.nix is protected: never overwritten if a
+#      real one already exists at the destination.
+#   3. Clones the selected host's projectRepos into its projectsDir.
 
 set -euo pipefail
 
@@ -26,7 +29,47 @@ if [ ! -d "$NIXOS_SRC_DIR" ]; then
   exit 1
 fi
 
-# --- 0. Warn if vars.nix still has default/placeholder passwords --------
+if ! command -v jq >/dev/null 2>&1; then
+  echo "!! This script needs 'jq'. On a fresh machine before the first rebuild: nix-shell -p jq" >&2
+  exit 1
+fi
+
+# --- 0. Pick which host --------------------------------------------------
+HOST="${1:-}"
+
+list_hosts() {
+  find "$NIXOS_SRC_DIR/hosts" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort
+}
+
+if [ -z "$HOST" ]; then
+  mapfile -t AVAILABLE < <(list_hosts)
+  if [ ${#AVAILABLE[@]} -eq 0 ]; then
+    echo "!! No hosts found under $NIXOS_SRC_DIR/hosts" >&2
+    exit 1
+  fi
+  if [ -t 0 ]; then
+    echo "Which host are you installing/updating?"
+    select choice in "${AVAILABLE[@]}"; do
+      if [ -n "$choice" ]; then
+        HOST="$choice"
+        break
+      fi
+    done
+  else
+    echo "!! No host given and not an interactive terminal. Usage: $0 <host>" >&2
+    echo "   Available hosts: ${AVAILABLE[*]}" >&2
+    exit 1
+  fi
+fi
+
+if [ ! -d "$NIXOS_SRC_DIR/hosts/$HOST" ]; then
+  echo "!! Unknown host '$HOST' — no directory at $NIXOS_SRC_DIR/hosts/$HOST" >&2
+  exit 1
+fi
+
+echo "==> Installing/updating host: $HOST"
+
+# --- 0b. Warn if shared default passwords are still in hosts/defaults.nix ---
 check_default_passwords() {
   local vars_file="$1"
   local found_defaults=()
@@ -41,19 +84,19 @@ check_default_passwords() {
   grep -q 'couchdbAdminPass[[:space:]]*=[[:space:]]*"changeme-couchdb"' "$vars_file" \
     && found_defaults+=("couchdbAdminPass ('changeme-couchdb')")
 
+  grep -q 'gitAdminPass[[:space:]]*=[[:space:]]*"changeme-git"' "$vars_file" \
+    && found_defaults+=("gitAdminPass ('changeme-git')")
+
   if [ ${#found_defaults[@]} -eq 0 ]; then
     return 0
   fi
 
-  echo "!! WARNING: vars.nix still has default placeholder password(s):"
+  echo "!! WARNING: hosts/defaults.nix still has default placeholder password(s), shared by every host:"
   for d in "${found_defaults[@]}"; do
     echo "     - $d"
   done
-  echo "   These are plaintext, publicly-known defaults from the template."
 
   if [ ! -t 0 ]; then
-    # Not an interactive terminal (e.g. piped/non-interactive run) — can't
-    # prompt, so just warn loudly and continue rather than hang or abort.
     echo "   (non-interactive shell, continuing anyway — fix this before relying on the server)"
     return 0
   fi
@@ -68,166 +111,78 @@ check_default_passwords() {
   esac
 }
 
-check_default_passwords "$NIXOS_SRC_DIR/vars.nix"
+check_default_passwords "$NIXOS_SRC_DIR/hosts/defaults.nix"
 
-# --- 0b. Prompt for which optional services to enable --------------------
-# Edits vars.nix in place based on the answers, so the choice persists
-# (not just for this run) — Enter keeps whatever's currently set.
-_prompt_toggle() {
-  local vars_file="$1" key="$2" question="$3"
-  local current
-
-  current="$(grep -E "^\s*${key}\s*=\s*(true|false)\s*;" "$vars_file" 2>/dev/null \
-    | grep -oE '(true|false)' | head -1)"
-  [ -z "$current" ] && current="true"
-
-  local reply new
-  read -rp "   $question [currently: $current] (y/n, Enter to keep) " reply
-  case "$reply" in
-    "") return 0 ;; # keep current
-    [yY]|[yY][eE][sS]) new="true" ;;
-    [nN]|[nN][oO]) new="false" ;;
-    *) echo "   Unrecognized input, keeping current ($current)"; return 0 ;;
-  esac
-
-  if [ "$new" != "$current" ]; then
-    sed -i "s/${key} = ${current};/${key} = ${new};/" "$vars_file"
-    echo "   -> set $key = $new"
-  fi
-}
-
-prompt_optional_services() {
-  local vars_file="$1"
-
-  if [ ! -f "$vars_file" ]; then
-    return 0
-  fi
-
-  if [ ! -t 0 ]; then
-    echo "==> Non-interactive shell — leaving jellyfinEnable/obsidianEnable/gitServerEnable in vars.nix as-is"
-    return 0
-  fi
-
-  echo
-  echo "==> Optional services (Enter keeps the current vars.nix setting):"
-  _prompt_toggle "$vars_file" "jellyfinEnable" "Enable Jellyfin (media server)?"
-  _prompt_toggle "$vars_file" "obsidianEnable" "Enable Obsidian sync backend (CouchDB)?"
-  _prompt_toggle "$vars_file" "gitServerEnable" "Enable self-hosted git server (Forgejo)?"
-  echo
-}
-
-prompt_optional_services "$NIXOS_SRC_DIR/vars.nix"
-
-# --- 1. Copy the NixOS config into /etc/nixos ---------------------------
-echo "==> Copying NixOS config from $NIXOS_SRC_DIR into $NIXOS_DIR"
+# --- 1. Copy the whole nixOS/ tree into /etc/nixos -----------------------
+echo "==> Copying $NIXOS_SRC_DIR into $NIXOS_DIR"
 sudo mkdir -p "$NIXOS_DIR"
 
-for f in flake.nix configuration.nix wsl-configuration.nix home.nix vars.nix; do
-  src="$NIXOS_SRC_DIR/$f"
-  dst="$NIXOS_DIR/$f"
-
-  if [ ! -f "$src" ]; then
-    echo "!! $src not found, skipping $f"
-    continue
-  fi
-
-  if [ -f "$dst" ] && cmp -s "$src" "$dst"; then
-    echo "==> $f already up to date, skipping"
-    continue
-  fi
-
-  if [ -e "$dst" ]; then
-    echo "==> Backing up existing $dst -> $dst.bak"
-    sudo cp "$dst" "$dst.bak"
-  fi
-
-  sudo cp "$src" "$dst"
-  echo "==> Copied $f"
-done
-
-# common/ is a directory (split into per-service .nix files) — sync it
-# wholesale rather than file by file, since files can be added/removed
-# there over time.
-if [ -d "$NIXOS_SRC_DIR/common" ]; then
-  if [ -d "$NIXOS_DIR/common" ] && diff -rq "$NIXOS_SRC_DIR/common" "$NIXOS_DIR/common" >/dev/null 2>&1; then
-    echo "==> common/ already up to date, skipping"
-  else
-    if [ -e "$NIXOS_DIR/common" ]; then
-      echo "==> Backing up existing $NIXOS_DIR/common -> $NIXOS_DIR/common.bak"
-      sudo rm -rf "$NIXOS_DIR/common.bak"
-      sudo cp -r "$NIXOS_DIR/common" "$NIXOS_DIR/common.bak"
+# Preserve any existing REAL hardware-configuration.nix files (per host)
+# before wiping — never let the repo's placeholders clobber a real one.
+TMP_HW_BACKUP="$(mktemp -d)"
+if [ -d "$NIXOS_DIR/hosts" ]; then
+  for hostDir in "$NIXOS_DIR"/hosts/*/; do
+    [ -d "$hostDir" ] || continue
+    hwFile="$hostDir/hardware-configuration.nix"
+    if [ -f "$hwFile" ]; then
+      hostName="$(basename "$hostDir")"
+      mkdir -p "$TMP_HW_BACKUP/$hostName"
+      sudo cp "$hwFile" "$TMP_HW_BACKUP/$hostName/hardware-configuration.nix"
     fi
-    sudo rm -rf "$NIXOS_DIR/common"
-    sudo cp -r "$NIXOS_SRC_DIR/common" "$NIXOS_DIR/common"
-    echo "==> Copied common/"
-  fi
-else
-  echo "!! $NIXOS_SRC_DIR/common not found, skipping"
+  done
 fi
+
+sudo rm -rf "$NIXOS_DIR"
+sudo mkdir -p "$NIXOS_DIR"
+sudo cp -r "$NIXOS_SRC_DIR"/. "$NIXOS_DIR"/
+
+for hostNameDir in "$TMP_HW_BACKUP"/*/; do
+  [ -d "$hostNameDir" ] || continue
+  hostName="$(basename "$hostNameDir")"
+  if [ -f "$hostNameDir/hardware-configuration.nix" ]; then
+    sudo cp "$hostNameDir/hardware-configuration.nix" "$NIXOS_DIR/hosts/$hostName/hardware-configuration.nix"
+    echo "==> Preserved existing real hardware-configuration.nix for host '$hostName'"
+  fi
+done
+rm -rf "$TMP_HW_BACKUP"
 
 # secrets.yaml (sops-nix) lives at the repo root, not inside nixOS/ —
-# only present once you've done the doc/secrets.md setup. Copied here
-# too since /etc/nixos is where the flake actually evaluates from, so
-# common/base.nix's relative path to it needs it to physically be here.
+# only present once you've done the doc/secrets.md setup.
 SECRETS_SRC="$REPO_ROOT/secrets.yaml"
 if [ -f "$SECRETS_SRC" ]; then
-  if [ -f "$NIXOS_DIR/secrets.yaml" ] && cmp -s "$SECRETS_SRC" "$NIXOS_DIR/secrets.yaml"; then
-    echo "==> secrets.yaml already up to date, skipping"
-  else
-    sudo cp "$SECRETS_SRC" "$NIXOS_DIR/secrets.yaml"
-    echo "==> Copied secrets.yaml"
-  fi
+  sudo cp "$SECRETS_SRC" "$NIXOS_DIR/secrets.yaml"
+  echo "==> Copied secrets.yaml"
 fi
 
-# hardware-configuration.nix: only put ours in place if there ISN'T
-# already a real one (e.g. very first run, right after nixos-generate-config
-# hasn't been merged in yet). Never clobber a real machine-specific one.
-if [ ! -e "$NIXOS_DIR/hardware-configuration.nix" ]; then
-  echo "==> No hardware-configuration.nix at $NIXOS_DIR — copying placeholder from repo"
-  echo "    Replace this with your real generated one before installing/rebuilding!"
-  sudo cp "$NIXOS_SRC_DIR/hardware-configuration.nix" "$NIXOS_DIR/hardware-configuration.nix"
-else
-  echo "==> Existing hardware-configuration.nix found at $NIXOS_DIR, leaving it untouched"
-fi
+# --- 2. Clone this host's project repos ----------------------------------
+PROJECTS_DIR="$(nix --extra-experimental-features 'nix-command' eval --raw --file "$NIXOS_SRC_DIR/hosts/defaults.nix" projectsDir 2>/dev/null || echo "/data/projects")"
 
-# --- 2. Set up the projects dir and clone the repos ---------------------
-# Read the actual path from vars.nix rather than hardcoding it, so this
-# stays correct if you ever change projectsDir.
-if command -v nix >/dev/null 2>&1; then
-  PROJECTS_DIR="$(nix --extra-experimental-features 'nix-command' eval --raw --file "$NIXOS_SRC_DIR/vars.nix" projectsDir 2>/dev/null || echo "")"
-fi
-if [ -z "${PROJECTS_DIR:-}" ]; then
-  PROJECTS_DIR="/data/projects"
-  echo "!! Could not read projectsDir from vars.nix (nix not available or eval failed), defaulting to $PROJECTS_DIR"
-fi
-
-REPOS=(
-  "https://github.com/enexolgort/transmission-API"
-  "https://github.com/enexolgort/transmission-webUi"
+mapfile -t REPOS < <(
+  nix --extra-experimental-features 'nix-command' eval --json \
+    --file "$NIXOS_SRC_DIR/hosts/$HOST/vars.nix" projectRepos 2>/dev/null \
+    | jq -r '.[]' 2>/dev/null || true
 )
 
-# /data is root-owned by default, so plain mkdir would fail here on a
-# fresh machine before the first rebuild has run the tmpfiles rule that
-# creates $PROJECTS_DIR with correct ownership. This makes it work
-# either way — harmless no-op if the directory and ownership are already
-# correct (the normal case, after at least one rebuild).
-sudo mkdir -p "$PROJECTS_DIR"
-sudo chown "$(id -u):$(id -g)" "$PROJECTS_DIR"
-echo "==> Projects dir: $PROJECTS_DIR"
+if [ ${#REPOS[@]} -eq 0 ]; then
+  echo "==> No projectRepos declared for host '$HOST', skipping project cloning"
+else
+  sudo mkdir -p "$PROJECTS_DIR"
+  sudo chown "$(id -u):$(id -g)" "$PROJECTS_DIR"
+  echo "==> Projects dir: $PROJECTS_DIR"
 
-for repo_url in "${REPOS[@]}"; do
-  name="$(basename "$repo_url")"
-  target="$PROJECTS_DIR/$name"
+  for repo_url in "${REPOS[@]}"; do
+    name="$(basename "$repo_url")"
+    target="$PROJECTS_DIR/$name"
 
-  if [ -d "$target/.git" ]; then
-    echo "==> $name already cloned, skipping (run 'git -C \"$target\" pull' to update)"
-    continue
-  fi
+    if [ -d "$target/.git" ]; then
+      echo "==> $name already cloned, skipping (run 'git -C \"$target\" pull' to update)"
+      continue
+    fi
 
-  echo "==> Cloning $name..."
-  git clone "$repo_url" "$target"
-done
+    echo "==> Cloning $name..."
+    git clone "$repo_url" "$target"
+  done
+fi
 
 echo "==> Done."
-echo "    Real machine: sudo nixos-rebuild switch --flake $NIXOS_DIR#scrapy"
-echo "    NixOS-WSL:    sudo nixos-rebuild switch --flake $NIXOS_DIR#scrapy-wsl"
+echo "    Run: sudo nixos-rebuild switch --flake $NIXOS_DIR#$HOST"

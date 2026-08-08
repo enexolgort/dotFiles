@@ -1,15 +1,11 @@
 # common/backups.nix — off by default, see doc/backups.md for setup and
-# restore instructions. Backs up: media library, CouchDB's actual data
-# directory (your Obsidian notes — easy to forget, genuinely
-# irreplaceable), Jellyfin's config/library database, your Forgejo git
-# repos, and your dotfiles/projects.
+# restore instructions. Which paths get backed up depends on which
+# services this host actually has enabled (jellyfinEnable,
+# obsidianEnable, gitServerEnable) — no point backing up
+# /var/lib/jellyfin on a host that doesn't run Jellyfin at all.
+{ config, pkgs, lib, vars, ... }:
+
 {
-  config,
-  pkgs,
-  lib,
-  vars,
-  ...
-}: {
   services.restic.backups.mediaserver = lib.mkIf vars.backupEnable {
     initialize = true;
     repository = vars.backupRepo;
@@ -19,13 +15,13 @@
       else "/etc/restic-backup-password"; # written below when secrets aren't set up yet
     paths = [
       vars.mediaDir
-      "/var/lib/couchdb"
-      "/var/lib/jellyfin"
-      "/var/lib/forgejo"
       "/home/${vars.username}/dotFiles"
       vars.projectsDir
-    ];
-    exclude = [
+    ]
+    ++ lib.optional vars.obsidianEnable "/var/lib/couchdb"
+    ++ lib.optional vars.jellyfinEnable "/var/lib/jellyfin"
+    ++ lib.optional vars.gitServerEnable "/var/lib/forgejo";
+    exclude = lib.optionals vars.jellyfinEnable [
       # Regenerable / often huge — not meaningfully "config", skip them
       "/var/lib/jellyfin/cache"
       "/var/lib/jellyfin/metadata"

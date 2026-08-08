@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  nix-flake-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      # NOTE: we deliberately do NOT run a blanket `nix flake check
+      # --all-systems` here. That tries to fully build EVERY host's
+      # nixosConfiguration, and real-machine hosts (targetType = "real")
+      # depend on their own hardware-configuration.nix — which is a
+      # placeholder in this repo on purpose (it's generated from actual
+      # hardware, and a generic CI runner has no way to genuinely
+      # satisfy that). Those hosts can only be validated on the real
+      # machine itself.
+      #
+      # WSL hosts (targetType = "wsl") don't depend on
+      # hardware-configuration.nix at all (WSL2 owns that layer) — so
+      # they're the ones CI actually *can* meaningfully build in full,
+      # and doing so covers the vast majority of the actual config
+      # (everything in common/, home.nix, flake.nix itself).
+      #
+      # Found by reading each host's own targetType directly (not by
+      # guessing from a hostname naming convention like "-wsl" — hosts
+      # can be named anything) — so this keeps working regardless of
+      # how many hosts exist or what they're called.
+      - name: Check formatting
+        run: |
+          cd nixOS
+          nix build .#checks.x86_64-linux.formatting --no-link
+
+      - name: Build every WSL-type host (the ones CI can fully validate)
+        run: |
+          cd nixOS
+          BUILT_ANY=false
+          for hostDir in hosts/*/; do
+            [ -d "$hostDir" ] || continue
+            hostName="$(basename "$hostDir")"
+            tt="$(nix --extra-experimental-features 'nix-command' eval --raw --file "hosts/$hostName/vars.nix" targetType 2>/dev/null || echo "")"
+            if [ "$tt" = "wsl" ]; then
+              echo "Building nixosConfigurations.$hostName (targetType=wsl)"
+              nix build ".#nixosConfigurations.$hostName.config.system.build.toplevel" --no-link
+              BUILT_ANY=true
+            fi
+          done
+          if [ "$BUILT_ANY" = false ]; then
+            echo "No host with targetType = \"wsl\" found under hosts/ — nothing for CI to build."
+            exit 1
+          fi
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Shellcheck everything in scripts/
+        run: shellcheck scripts/*.sh

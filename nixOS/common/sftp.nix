@@ -1,16 +1,13 @@
 # common/sftp.nix — dedicated, chrooted, tailnet-only upload user
 # (separate from your normal admin account). Drops files straight into
-# the media dir. Directory layout itself is in storage.nix.
-{
-  config,
-  pkgs,
-  lib,
-  vars,
-  ...
-}: {
+# the media dir. Directory layout itself is in storage.nix. Off unless
+# a host sets sftpEnable = true.
+{ config, pkgs, lib, vars, ... }:
+
+lib.mkIf vars.sftpEnable {
   fileSystems."${vars.sftpDir}/upload" = {
     device = vars.mediaDir;
-    options = ["bind"];
+    options = [ "bind" ];
   };
 
   users.groups.sftponly = {};
@@ -23,7 +20,7 @@
     # created shared group (see base.nix) — an earlier version of this
     # tried using vars.username as a group name directly, which was
     # wrong (see base.nix's note on why).
-    extraGroups = ["sftponly" "media"];
+    extraGroups = [ "sftponly" "media" ];
     shell = "${pkgs.shadow}/bin/nologin";
     openssh.authorizedKeys.keys = vars.sftpPublicKeys;
   };

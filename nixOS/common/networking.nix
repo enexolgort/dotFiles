@@ -4,13 +4,9 @@
 # tailnet-only with zero extra config, which is why none of the other
 # service files (jellyfin.nix, couchdb.nix, forgejo.nix, sftp.nix) need
 # any firewall rules of their own.
+{ config, pkgs, lib, vars, ... }:
+
 {
-  config,
-  pkgs,
-  lib,
-  vars,
-  ...
-}: {
   # ======================================================================
   # TAILSCALE
   # ======================================================================
@@ -23,8 +19,8 @@
   services.tailscale.enable = true;
 
   systemd.services.tailscaled = {
-    after = ["network-online.target"];
-    wants = ["network-online.target"];
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
   };
 
   # --- Lock the server down: everything below is reachable ONLY via
@@ -33,8 +29,8 @@
   # reach them.
   networking.firewall = {
     enable = true;
-    trustedInterfaces = ["tailscale0"]; # tailnet traffic bypasses the firewall
-    allowedUDPPorts = [41641]; # lets Tailscale establish direct (non-relayed) connections
+    trustedInterfaces = [ "tailscale0" ]; # tailnet traffic bypasses the firewall
+    allowedUDPPorts = [ 41641 ];          # lets Tailscale establish direct (non-relayed) connections
     # No allowedTCPPorts here on purpose — SSH/Jellyfin/CouchDB/Forgejo/
     # SFTP are all only reachable through tailscale0 above.
   };

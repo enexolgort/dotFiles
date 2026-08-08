@@ -24,9 +24,10 @@ Skip this if you're only deploying to the real machine — see [deploy-real-mach
    nix-shell -p git
    git clone <your-dotfiles-repo-url> ~/dotFiles
    cd ~/dotFiles
-   ./scripts/install.sh
-   sudo nixos-rebuild switch --flake /etc/nixos#scrapy-wsl
+   ./scripts/install.sh headless
+   sudo nixos-rebuild switch --flake /etc/nixos#headless
    ```
+   (swap `headless` for whichever WSL-`targetType` host you're actually deploying)
 
 5. Continue with [first-boot-setup.md](./first-boot-setup.md).
 
@@ -39,8 +40,8 @@ If `nixos-rebuild` fails trying to build `nixos-wsl-utils` with a Cargo/Rust `ed
 ```bash
 rm ~/dotFiles/nixOS/flake.lock
 cd ~/dotFiles
-./scripts/install.sh
-sudo nixos-rebuild switch --flake /etc/nixos#scrapy-wsl
+./scripts/install.sh headless
+sudo nixos-rebuild switch --flake /etc/nixos#headless
 ```
 
 After this bump, also double check the `permittedInsecurePackages` entries in `common/base.nix` — they're pinned to exact Emacs version strings from the old nixpkgs, which will likely differ (or no longer be needed at all) on the new one. If a *new* insecure-package error appears with a different version string, add that string instead.

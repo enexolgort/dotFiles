@@ -8,7 +8,8 @@
 # Usage:
 #   ./check-remote.sh [--host <tailscale-ip-or-name>] [--sftp-user <name>] [--sftp-key <path>] [--samba]
 #
-#   --host        Target server (default: scrapy, then scrapy-wsl as fallback)
+#   --host        Target server (required — e.g. dusty, headless, scrapy,
+#                 or a tailscale IP)
 #   --sftp-user   Attempt an actual SFTP login test (default: skip, port-only check)
 #   --sftp-key    Private key to use for the SFTP login test
 #   --samba       Also check Samba (port 445) — only meaningful on the
@@ -52,14 +53,11 @@ fail() { echo "  ${RED}✗${RESET} $1"; FAIL_COUNT=$((FAIL_COUNT + 1)); }
 warn() { echo "  ${YELLOW}!${RESET} $1"; }
 section() { echo; echo "${BOLD}$1${RESET}"; }
 
-# --- Pick a target host if not specified --------------------------------
+# --- --host is required now — with multiple, arbitrarily-named hosts
+# there's no sensible default to guess.
 if [ -z "$HOST" ]; then
-  if command -v tailscale >/dev/null 2>&1 && tailscale status 2>/dev/null | grep -q "scrapy-wsl"; then
-    HOST="scrapy-wsl"
-  else
-    HOST="scrapy"
-  fi
-  echo "No --host given, defaulting to '$HOST' (override with --host <name-or-ip>)"
+  echo "!! --host is required, e.g.: $0 --host dusty" >&2
+  exit 1
 fi
 
 # --- Portable TCP port check using bash's /dev/tcp, no netcat needed ---

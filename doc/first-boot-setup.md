@@ -27,7 +27,7 @@ From your laptop:
 ```bash
 sftp -i ~/.ssh/id_ed25519 sftpuser@<tailscale-ip>
 ```
-You'll land directly in `mediaDir`. Only works with the key you set as `sftpPublicKey` in `vars.nix`.
+You'll land directly in `mediaDir`. Only works with a key listed in `sftpPublicKeys` in `vars.nix` — add one entry per device you want SFTP access from.
 
 ## Docker
 ```bash
@@ -94,11 +94,11 @@ The system boots straight to a TTY console as usual — GNOME only runs (and onl
 `check-remote.sh` (in `scripts/`) is a client-side health check — run it from **any device on your tailnet**, not the server itself, to verify SSH, SFTP, Jellyfin, and CouchDB are all actually reachable in one shot instead of manually `curl`/`ping`-ing each one:
 
 ```bash
-./scripts/check-remote.sh --host scrapy-wsl
+./scripts/check-remote.sh --host dusty
 ```
 
 Options:
-- `--host <name-or-ip>` — target server (defaults to `scrapy`, or `scrapy-wsl` if `tailscale status` shows it)
+- `--host <name-or-ip>` — target server (e.g. `dusty`, `headless`, `scrapy`)
 - `--sftp-user <name> --sftp-key <path>` — do an actual SFTP login test, not just a port check
 - `--samba` — also check Samba's port 445 (real-machine target only; skip entirely on WSL)
 

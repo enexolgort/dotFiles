@@ -9,12 +9,13 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-VARS_FILE="$REPO_ROOT/nixOS/vars.nix"
+CURRENT_HOST="$(hostname)"
+VARS_FILE="$REPO_ROOT/nixOS/hosts/$CURRENT_HOST/vars.nix"
 
 if [ -f "$VARS_FILE" ]; then
   USERNAME="$(nix --extra-experimental-features 'nix-command' eval --raw --file "$VARS_FILE" username)"
 else
-  echo "!! Could not find $VARS_FILE, falling back to \$USER ($USER)"
+  echo "!! Could not find $VARS_FILE (this machine's hostname is '$CURRENT_HOST' — does hosts/$CURRENT_HOST/ exist in the repo?), falling back to \$USER ($USER)"
   USERNAME="$USER"
 fi
 

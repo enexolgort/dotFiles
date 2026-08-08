@@ -8,14 +8,10 @@
 #
 # Then copy the generated /mnt/etc/nixos/hardware-configuration.nix
 # over this file before running nixos-rebuild.
+{ config, lib, pkgs, modulesPath, ... }:
+
 {
-  config,
-  lib,
-  pkgs,
-  modulesPath,
-  ...
-}: {
-  imports = [(modulesPath + "/installer/scan/not-detected.nix")];
+  imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
 
   # Example content — replace entirely with your generated version:
   # boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "sd_mod" ];

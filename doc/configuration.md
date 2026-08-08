@@ -1,51 +1,60 @@
-# Configuration — vars.nix
+# Configuration — hosts/defaults.nix + per-host vars.nix
 
-This is the single place to edit for routine changes:
+Shared values (edit for changes that apply to every machine) live in `nixOS/hosts/defaults.nix`:
 
 ```nix
 {
   system = "x86_64-linux";
-  hostname = "scrapy";
   timeZone = "Europe/Paris";
   locale = "en_US.UTF-8";
   keyMap = "fr";                 # AZERTY. "be" for Belgian AZERTY, "us" for QWERTY
 
-  username = "enexolgort";
   initialPassword = "changeme";
-  gitEmail = "enexolgort@scrapy.local";
 
   mediaDir = "/data/media";
   sftpDir = "/data/sftp";
+  projectsDir = "/data/projects";
+
   sftpPublicKeys = [ "ssh-ed25519 AAAA... your-key" ];
 
   couchdbAdminUser = "admin";
   couchdbAdminPass = "changeme-couchdb";
 
+  gitAdminUser = "gituser";
+  gitAdminPass = "changeme-git";
+
   sambaWorkgroup = "WORKGROUP";
+  extraMounts = [ ];
 
-  extraMounts = [ ];              # extra physical drives — see below
-
-  backupEnable = false;           # restic backups — see backups.md
+  backupEnable = false;
   backupRepo = "/mnt/backup/restic-repo";
   backupPassword = "changeme-restic-backup-password";
 
-  secretsEnabled = false;         # sops-nix — see secrets.md
-
-  notifyWebhook = "";             # health-check failure notifications
+  secretsEnabled = false;
+  notifyWebhook = "";
 }
 ```
 
-## Optional services
-`scripts/install.sh` prompts interactively for three toggles — Enter keeps whatever's currently in `vars.nix` (all default to enabled):
+Per-machine values (hostname, username, which services run, project repos) live in `nixOS/hosts/<name>/vars.nix` — see [hosts.md](./hosts.md) for the full multi-host reference. Example (`hosts/dusty/vars.nix`):
 ```nix
-jellyfinEnable = true;
-obsidianEnable = true;  # CouchDB backend for Obsidian Self-hosted LiveSync
-gitServerEnable = true; # Forgejo
-```
-Non-interactive runs (piped input, no TTY) skip the prompts and leave these untouched. You can also just edit them directly in `vars.nix` instead of going through the prompt.
+{
+  hostname = "dusty";
+  username = "enexolgort";
+  gitEmail = "enexolgort@dusty.local";
+  targetType = "real";
 
-## Extra storage drives (real machine only)
-For physical drives beyond the boot disk (e.g. SATA drives on the ZimaBoard), add them to `vars.nix`'s `extraMounts` list rather than editing `configuration.nix` directly:
+  jellyfinEnable = true;
+  obsidianEnable = false;
+  gitServerEnable = false;
+  aiEnable = false;
+
+  projectRepos = [ "https://github.com/enexolgort/transmission-webUi" ];
+}
+```
+The final config for a host is `defaults.nix` merged with that host's own file — the host's values win on any overlap.
+
+## Extra storage drives (real machine hosts only)
+For physical drives beyond the boot disk, add them to `extraMounts` — in `hosts/defaults.nix` if every real-machine host should see it, or in a specific host's own `vars.nix` if it's just for that machine:
 ```nix
 extraMounts = [
   {
@@ -56,33 +65,30 @@ extraMounts = [
   }
 ];
 ```
-Find the UUID with `sudo blkid` once the drive is physically connected. `nofail` is deliberate and set by default — without it, a missing or disconnected drive would block boot entirely (the exact kind of hang you'd want to avoid). With it, the system just comes up without that mount if the drive isn't there, instead of hanging indefinitely.
+Find the UUID with `sudo blkid` once the drive is physically connected. `nofail` is deliberate and set by default — without it, a missing or disconnected drive would block boot entirely. With it, the system just comes up without that mount if the drive isn't there.
 
-This only applies to the real-machine target (`configuration.nix`) — WSL doesn't have physical drives to mount this way.
+This only applies to `targetType = "real"` hosts — WSL doesn't have physical drives to mount this way.
 
 ## Backups, secrets, and monitoring
-Three more opt-in features, all off by default so nothing changes until you deliberately turn them on:
-- **Backups** (restic) — see [backups.md](./backups.md)
-- **Secrets** (sops-nix, replacing the plaintext passwords in this file) — see [secrets.md](./secrets.md)
-- **Monitoring** — runs `check-remote.sh` every 15 minutes from the server itself; set `notifyWebhook` to a URL (ntfy.sh, Discord webhook, etc.) to get notified on failure, or leave it blank to just log results (`journalctl -u healthcheck.service`)
+Three more opt-in features, all off by default in `hosts/defaults.nix`:
+- **Backups** (restic) — see [backups.md](./backups.md). Which paths get backed up is automatically conditional on that host's own `jellyfinEnable`/`obsidianEnable`/`gitServerEnable`.
+- **Secrets** (sops-nix) — see [secrets.md](./secrets.md)
+- **Monitoring** — runs `check-remote.sh` every 15 minutes from each server itself; set `notifyWebhook` to get notified on failure
 
-Change the hostname, rename the user, swap the SSH key, whatever — edit `vars.nix`, run `nixos-rebuild switch`, done. No more hunting across three files (that's exactly how the group-ownership bug happened during an early rename — this is the fix for that class of mistake).
+## Before you deploy — replace these placeholders
+| Variable | Where | What to change |
+|---|---|---|
+| `couchdbAdminPass`, `gitAdminPass` | `hosts/defaults.nix` | real passwords |
+| `sftpPublicKeys` | `hosts/defaults.nix` | your actual SSH public key(s) |
+| `hostname`, `username`, `gitEmail` | each `hosts/<name>/vars.nix` | per machine |
 
-## Before you deploy — replace these placeholders in vars.nix
-| Variable | What to change |
-|---|---|
-| `couchdbAdminPass` | a real password |
-| `sftpPublicKeys` | list of SSH public keys — one per device you want SFTP access from |
-| `hostname` / `username` / `timeZone` / `keyMap` | if desired |
-| `gitEmail` | your real email |
-
-**On secrets:** `initialPassword` and `couchdbAdminPass` land in plaintext in the Nix store (world-readable). That's fine to get started, but for a server you'll keep long-term, look into [sops-nix](https://github.com/Mic92/sops-nix) or [agenix](https://github.com/ryantm/agenix) to encrypt them instead.
+**On secrets:** `initialPassword`, `couchdbAdminPass`, `gitAdminPass` land in plaintext in the Nix store (world-readable) until `secretsEnabled` is turned on — see [secrets.md](./secrets.md).
 
 ## Assumptions / design choices made
-- Media server: **Jellyfin**, CPU-only transcoding, no *arr stack (as decided earlier)
-- **Everything sensitive is locked to your tailnet.** The firewall trusts only the `tailscale0` interface — Jellyfin, CouchDB, and SSH/SFTP are not reachable from your LAN or the internet, only from devices logged into your Tailscale network. Samba is the one exception, left open on the LAN — but only on the real-machine target; it's not enabled on WSL at all (nmbd crashes on WSL2's NAT networking).
-- **Obsidian sync**: Obsidian's own paid Sync service can't be self-hosted. I set up **CouchDB** instead, which pairs with the community plugin **"Self-hosted LiveSync"** — this is the standard self-hosted alternative and is reachable only via Tailscale.
-- **SFTP**: a separate, unprivileged `sftpuser` account, chrooted to `sftpDir`, which is bind-mounted to `mediaDir/upload` — so it can only ever write into your media folder, nothing else on the system. Key-based auth only (no password).
-- **Tailscale SSH**: enabled via a one-time `tailscale up --ssh` command (see [first-boot-setup.md](./first-boot-setup.md)) — gives you keyless, identity-based SSH login to your main account from any device in your tailnet, no SSH keys required.
+- **Everything sensitive is locked to your tailnet.** The firewall trusts only the `tailscale0` interface — Jellyfin, CouchDB, Forgejo, Ollama/Open WebUI, and SSH/SFTP are not reachable from your LAN or the internet, only from devices in your Tailscale network. Samba is the one exception, left open on the LAN — but only on real-machine hosts; not enabled on WSL at all (nmbd crashes on WSL2's NAT networking).
+- **Obsidian sync**: Obsidian's own paid Sync service can't be self-hosted. CouchDB + the community plugin **"Self-hosted LiveSync"** is the standard self-hosted alternative, tailnet-only.
+- **SFTP**: a separate, unprivileged `sftpuser` account, chrooted to `sftpDir`, bind-mounted to `mediaDir/upload` — can only ever write into the media folder. Key-based auth only.
+- **Local AI (`scrapy`)**: Ollama + Open WebUI, both real NixOS modules, CPU-only by default.
+- **Tailscale SSH**: enabled via a one-time `tailscale up --ssh` command per machine (see [first-boot-setup.md](./first-boot-setup.md)).
 
 [← back to overview](./overview.md)

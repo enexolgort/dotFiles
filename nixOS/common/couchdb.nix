@@ -1,16 +1,13 @@
 # common/couchdb.nix — via the "Self-hosted LiveSync" community plugin,
 # backed by CouchDB. Obsidian's official paid Sync service is NOT
 # self-hostable; this is the community-standard alternative. Reachable
-# only via your tailnet at http://<tailscale-ip>:5984
-{
-  config,
-  pkgs,
-  lib,
-  vars,
-  ...
-}: {
+# only via your tailnet at http://<tailscale-ip>:5984. Off unless a host
+# sets obsidianEnable = true.
+{ config, pkgs, lib, vars, ... }:
+
+lib.mkIf vars.obsidianEnable {
   services.couchdb = {
-    enable = vars.obsidianEnable;
+    enable = true;
     bindAddress = "0.0.0.0"; # legacy [httpd] section — CouchDB 3.x doesn't actually serve from here
     adminUser = vars.couchdbAdminUser;
     adminPass = vars.couchdbAdminPass; # CHANGE in vars.nix — see doc/secrets.md re: this option's real limitation
@@ -30,7 +27,7 @@
   };
 
   systemd.services.couchdb = {
-    after = ["network-online.target"];
-    wants = ["network-online.target"];
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
   };
 }

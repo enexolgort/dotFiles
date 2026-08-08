@@ -2,16 +2,13 @@
 # changes needed at all: trustedInterfaces in networking.nix already
 # covers this port automatically, same as Jellyfin/CouchDB.
 # Lightweight (single Go binary, SQLite by default) — fine for modest
-# hardware. Reachable at http://<tailscale-ip>:3000
-{
-  config,
-  pkgs,
-  lib,
-  vars,
-  ...
-}: {
+# hardware. Reachable at http://<tailscale-ip>:3000. Off unless a host
+# sets gitServerEnable = true.
+{ config, pkgs, lib, vars, ... }:
+
+lib.mkIf vars.gitServerEnable {
   services.forgejo = {
-    enable = vars.gitServerEnable;
+    enable = true;
     settings.server = {
       HTTP_ADDR = "0.0.0.0"; # firewall (trustedInterfaces) restricts real exposure
       HTTP_PORT = 3000;
@@ -31,6 +28,6 @@
       --email "${vars.gitAdminUser}@${vars.hostname}.local" || true
   '';
 
-  systemd.services.forgejo.after = ["network-online.target"];
-  systemd.services.forgejo.wants = ["network-online.target"];
+  systemd.services.forgejo.after = [ "network-online.target" ];
+  systemd.services.forgejo.wants = [ "network-online.target" ];
 }
